@@ -57,6 +57,25 @@ export interface TranslationDictionary {
   deleteHoliday: string;
   holidayPast: string;
   holidayUpcoming: string;
+  holidayWorkTitle: string;
+  holidayWorkDescription: string;
+  holidayEmployee: string;
+  holidaySelectEmployee: string;
+  holidayWorkName: string;
+  holidayWorkDate: string;
+  holidayWorkNotes: string;
+  holidayWorkAdd: string;
+  holidayWorkEmpty: string;
+  holidayAnnualLeaveTitle: string;
+  holidayAnnualLeaveDescription: string;
+  holidayEntitlementDays: string;
+  holidayUsedDays: string;
+  holidayRemainingDays: string;
+  holidaySaveBalance: string;
+  holidayEditBalance: string;
+  holidayDeleteRecord: string;
+  holidayAnnualLeaveEmpty: string;
+  holidayDaysUnit: string;
   healthCardsExpiringSoon: string;
   pendingAdvancesBadge: string;
 
@@ -230,6 +249,25 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     deleteHoliday: 'حذف العطلة',
     holidayPast: 'ماضية',
     holidayUpcoming: 'قادمة',
+    holidayWorkTitle: 'العطل التي عمل فيها الموظفون',
+    holidayWorkDescription: 'سجّل اسم الموظف والعطلة وتاريخ العمل للرجوع إليها لاحقاً.',
+    holidayEmployee: 'اسم الموظف',
+    holidaySelectEmployee: 'اختر الموظف',
+    holidayWorkName: 'اسم العطلة التي عمل فيها',
+    holidayWorkDate: 'تاريخ العمل في العطلة',
+    holidayWorkNotes: 'ملاحظات (اختياري)',
+    holidayWorkAdd: 'تسجيل عمل في عطلة',
+    holidayWorkEmpty: 'لا توجد سجلات عمل في العطل.',
+    holidayAnnualLeaveTitle: 'إدارة العطلة السنوية يدوياً',
+    holidayAnnualLeaveDescription: 'أدخل رصيد الاستحقاق والأيام المستخدمة يدوياً لكل موظف وسنة. المتبقي يُحسب تلقائياً.',
+    holidayEntitlementDays: 'أيام الاستحقاق السنوي',
+    holidayUsedDays: 'أيام مستخدمة',
+    holidayRemainingDays: 'الأيام المتبقية',
+    holidaySaveBalance: 'حفظ رصيد العطلة',
+    holidayEditBalance: 'تعديل',
+    holidayDeleteRecord: 'حذف السجل',
+    holidayAnnualLeaveEmpty: 'لا توجد أرصدة عطلة سنوية مسجلة لهذه السنة.',
+    holidayDaysUnit: 'يوم',
     healthCardsExpiringSoon: 'شهادات صحية تنتهي قريباً',
     pendingAdvancesBadge: 'سلفيات معلقة للموافقة',
 
@@ -396,6 +434,25 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     deleteHoliday: 'Supprimer le jour férié',
     holidayPast: 'Passé',
     holidayUpcoming: 'À venir',
+    holidayWorkTitle: 'Jours fériés travaillés par les salariés',
+    holidayWorkDescription: 'Enregistrez le salarié, le jour férié et la date travaillée.',
+    holidayEmployee: 'Nom du salarié',
+    holidaySelectEmployee: 'Sélectionner un salarié',
+    holidayWorkName: 'Nom du jour férié travaillé',
+    holidayWorkDate: 'Date travaillée',
+    holidayWorkNotes: 'Notes (facultatif)',
+    holidayWorkAdd: 'Enregistrer le jour travaillé',
+    holidayWorkEmpty: 'Aucun jour férié travaillé enregistré.',
+    holidayAnnualLeaveTitle: 'Gestion manuelle des congés annuels',
+    holidayAnnualLeaveDescription: 'Saisissez manuellement les jours acquis et utilisés par salarié et par année. Le solde restant est calculé automatiquement.',
+    holidayEntitlementDays: 'Jours de congé acquis',
+    holidayUsedDays: 'Jours utilisés',
+    holidayRemainingDays: 'Jours restants',
+    holidaySaveBalance: 'Enregistrer le solde',
+    holidayEditBalance: 'Modifier',
+    holidayDeleteRecord: 'Supprimer',
+    holidayAnnualLeaveEmpty: 'Aucun solde annuel enregistré pour cette année.',
+    holidayDaysUnit: 'jours',
     healthCardsExpiringSoon: 'Certificats médicaux expirant bientôt',
     pendingAdvancesBadge: 'Acomptes en attente de validation',
 
@@ -562,6 +619,25 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     deleteHoliday: 'Delete holiday',
     holidayPast: 'Past',
     holidayUpcoming: 'Upcoming',
+    holidayWorkTitle: 'Public holidays worked by employees',
+    holidayWorkDescription: 'Record the employee, holiday name, and date worked.',
+    holidayEmployee: 'Employee name',
+    holidaySelectEmployee: 'Select employee',
+    holidayWorkName: 'Holiday worked',
+    holidayWorkDate: 'Date worked',
+    holidayWorkNotes: 'Notes (optional)',
+    holidayWorkAdd: 'Record holiday work',
+    holidayWorkEmpty: 'No holiday work records yet.',
+    holidayAnnualLeaveTitle: 'Manual annual leave management',
+    holidayAnnualLeaveDescription: 'Manually enter entitled and used leave days for each employee and year. Remaining days are calculated automatically.',
+    holidayEntitlementDays: 'Entitled leave days',
+    holidayUsedDays: 'Days used',
+    holidayRemainingDays: 'Days remaining',
+    holidaySaveBalance: 'Save leave balance',
+    holidayEditBalance: 'Edit',
+    holidayDeleteRecord: 'Delete record',
+    holidayAnnualLeaveEmpty: 'No annual leave balances recorded for this year.',
+    holidayDaysUnit: 'days',
     healthCardsExpiringSoon: 'Health cards expiring soon',
     pendingAdvancesBadge: 'Advances pending approval',
 

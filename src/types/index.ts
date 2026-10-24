@@ -66,6 +66,22 @@ export interface OfficialHoliday {
   notes?: string;
 }
 
+export interface HolidayWorkRecord {
+  id: string;
+  employeeId: string;
+  holidayName: string;
+  holidayDate: string;        // YYYY-MM-DD
+  notes?: string;
+}
+
+export interface AnnualLeaveRecord {
+  id: string;
+  employeeId: string;
+  year: number;
+  entitlementDays: number;
+  usedDays: number;
+}
+
 export type AdvanceStatus = 'PENDING' | 'APPROVED' | 'DEDUCTED' | 'REJECTED';
 
 export interface AdvanceRecord {

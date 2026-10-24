@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CalendarDays, Plus, Trash2 } from 'lucide-react';
-import { OfficialHoliday } from '../types';
+import { AnnualLeaveRecord, Employee, HolidayWorkRecord, OfficialHoliday } from '../types';
 import { AppLanguage, getTranslation, TranslationDictionary } from '../i18n/translations';
 import { getCurrentDateString } from '../utils/formatters';
 
@@ -92,22 +92,43 @@ function getAnnualHolidayCalendar(year: number, t: TranslationDictionary): Calen
 
 interface OfficialHolidaysViewProps {
   holidays: OfficialHoliday[];
+  employees: Employee[];
+  holidayWorkRecords: HolidayWorkRecord[];
+  annualLeaveRecords: AnnualLeaveRecord[];
   language?: AppLanguage;
   onAddHoliday: (holiday: Omit<OfficialHoliday, 'id'>) => void;
   onDeleteHoliday: (id: string) => void;
+  onAddHolidayWorkRecord: (record: Omit<HolidayWorkRecord, 'id'>) => void;
+  onDeleteHolidayWorkRecord: (id: string) => void;
+  onSaveAnnualLeaveRecord: (record: Omit<AnnualLeaveRecord, 'id'>) => void;
+  onDeleteAnnualLeaveRecord: (id: string) => void;
 }
 
 export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
   holidays,
+  employees,
+  holidayWorkRecords,
+  annualLeaveRecords,
   language = 'ar',
   onAddHoliday,
   onDeleteHoliday,
+  onAddHolidayWorkRecord,
+  onDeleteHolidayWorkRecord,
+  onSaveAnnualLeaveRecord,
+  onDeleteAnnualLeaveRecord,
 }) => {
   const t = getTranslation(language);
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
   const [category, setCategory] = useState<OfficialHoliday['category'] | ''>('');
+  const [workEmployeeId, setWorkEmployeeId] = useState('');
+  const [workHolidayName, setWorkHolidayName] = useState('');
+  const [workHolidayDate, setWorkHolidayDate] = useState('');
+  const [workNotes, setWorkNotes] = useState('');
+  const [leaveEmployeeId, setLeaveEmployeeId] = useState('');
+  const [entitlementDays, setEntitlementDays] = useState('');
+  const [usedDays, setUsedDays] = useState('');
   const currentYear = Number(getCurrentDateString().slice(0, 4));
   const [yearInput, setYearInput] = useState(String(currentYear));
   const yearValue = Number(yearInput);
@@ -115,6 +136,13 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
     ? yearValue
     : currentYear;
   const annualHolidays = getAnnualHolidayCalendar(year, t);
+  const selectedYearLeaveRecords = annualLeaveRecords
+    .filter(record => record.year === year)
+    .sort((a, b) => {
+      const employeeA = employees.find(employee => employee.id === a.employeeId)?.fullName ?? '';
+      const employeeB = employees.find(employee => employee.id === b.employeeId)?.fullName ?? '';
+      return employeeA.localeCompare(employeeB);
+    });
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -135,6 +163,52 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
 
   const addCalendarHoliday = (holiday: CalendarHoliday) => {
     onAddHoliday(holiday);
+  };
+
+  const handleHolidayWorkSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const holidayName = workHolidayName.trim();
+    if (!workEmployeeId || !holidayName || !workHolidayDate) return;
+
+    onAddHolidayWorkRecord({
+      employeeId: workEmployeeId,
+      holidayName,
+      holidayDate: workHolidayDate,
+      notes: workNotes.trim() || undefined,
+    });
+    setWorkEmployeeId('');
+    setWorkHolidayName('');
+    setWorkHolidayDate('');
+    setWorkNotes('');
+  };
+
+  const handleAnnualLeaveSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const entitled = Number(entitlementDays);
+    const used = Number(usedDays);
+    if (
+      !leaveEmployeeId ||
+      !Number.isFinite(entitled) ||
+      !Number.isFinite(used) ||
+      entitled < 0 ||
+      used < 0
+    ) return;
+
+    onSaveAnnualLeaveRecord({
+      employeeId: leaveEmployeeId,
+      year,
+      entitlementDays: entitled,
+      usedDays: used,
+    });
+    setLeaveEmployeeId('');
+    setEntitlementDays('');
+    setUsedDays('');
+  };
+
+  const editAnnualLeaveRecord = (record: AnnualLeaveRecord) => {
+    setLeaveEmployeeId(record.employeeId);
+    setEntitlementDays(String(record.entitlementDays));
+    setUsedDays(String(record.usedDays));
   };
 
   const isHolidayAdded = (holiday: CalendarHoliday) =>
@@ -288,6 +362,228 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-bold text-white">{t.holidayWorkTitle}</h2>
+          <p className="mt-1 text-sm text-slate-400">{t.holidayWorkDescription}</p>
+        </div>
+        <form
+          onSubmit={handleHolidayWorkSubmit}
+          className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-800 bg-slate-850 p-5 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <label className="space-y-2 text-xs font-semibold text-slate-300">
+            <span>{t.holidayEmployee}</span>
+            <select
+              required
+              value={workEmployeeId}
+              onChange={event => setWorkEmployeeId(event.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+            >
+              <option value="">{t.holidaySelectEmployee}</option>
+              {employees.filter(employee => employee.status !== 'TERMINATED').map(employee => (
+                <option key={employee.id} value={employee.id}>{employee.fullName}</option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-2 text-xs font-semibold text-slate-300">
+            <span>{t.holidayWorkName}</span>
+            <input
+              required
+              value={workHolidayName}
+              onChange={event => setWorkHolidayName(event.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+              placeholder={t.holidayName}
+            />
+          </label>
+          <label className="space-y-2 text-xs font-semibold text-slate-300">
+            <span>{t.holidayWorkDate}</span>
+            <input
+              required
+              type="date"
+              value={workHolidayDate}
+              onChange={event => setWorkHolidayDate(event.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+            />
+          </label>
+          <label className="space-y-2 text-xs font-semibold text-slate-300">
+            <span>{t.holidayWorkNotes}</span>
+            <input
+              value={workNotes}
+              onChange={event => setWorkNotes(event.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+              placeholder={t.holidayWorkNotes}
+            />
+          </label>
+          <div className="md:col-span-2 xl:col-span-4 flex justify-end">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-400"
+            >
+              <Plus className="w-4 h-4" />
+              {t.holidayWorkAdd}
+            </button>
+          </div>
+        </form>
+        {holidayWorkRecords.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-850/50 p-8 text-center text-sm text-slate-400">
+            {t.holidayWorkEmpty}
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-850">
+            <table className="w-full min-w-[620px] text-right text-sm">
+              <thead className="bg-slate-900/70 text-xs text-slate-400">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">{t.holidayEmployee}</th>
+                  <th className="px-5 py-3 font-semibold">{t.holidayName}</th>
+                  <th className="px-5 py-3 font-semibold">{t.holidayWorkDate}</th>
+                  <th className="px-5 py-3 font-semibold">{t.holidayNotes}</th>
+                  <th className="px-5 py-3 text-center font-semibold">{t.colActions}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {[...holidayWorkRecords].sort((a, b) => b.holidayDate.localeCompare(a.holidayDate)).map(record => (
+                  <tr key={record.id} className="hover:bg-slate-800/40">
+                    <td className="px-5 py-3 font-semibold text-white">
+                      {employees.find(employee => employee.id === record.employeeId)?.fullName ?? '—'}
+                    </td>
+                    <td className="px-5 py-3 text-slate-200">{record.holidayName}</td>
+                    <td className="whitespace-nowrap px-5 py-3 text-amber-300" dir="ltr">
+                      {new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' })
+                        .format(new Date(`${record.holidayDate}T00:00:00Z`))}
+                    </td>
+                    <td className="px-5 py-3 text-slate-400">{record.notes || '—'}</td>
+                    <td className="px-5 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => onDeleteHolidayWorkRecord(record.id)}
+                        title={t.holidayDeleteRecord}
+                        aria-label={`${t.holidayDeleteRecord}: ${record.holidayName}`}
+                        className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-rose-500/10 hover:text-rose-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-bold text-white">{t.holidayAnnualLeaveTitle}</h2>
+          <p className="mt-1 text-sm text-slate-400">{t.holidayAnnualLeaveDescription}</p>
+        </div>
+        <form
+          onSubmit={handleAnnualLeaveSubmit}
+          className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-800 bg-slate-850 p-5 md:grid-cols-3"
+        >
+          <label className="space-y-2 text-xs font-semibold text-slate-300">
+            <span>{t.holidayEmployee}</span>
+            <select
+              required
+              value={leaveEmployeeId}
+              onChange={event => setLeaveEmployeeId(event.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+            >
+              <option value="">{t.holidaySelectEmployee}</option>
+              {employees.filter(employee => employee.status !== 'TERMINATED').map(employee => (
+                <option key={employee.id} value={employee.id}>{employee.fullName}</option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-2 text-xs font-semibold text-slate-300">
+            <span>{t.holidayEntitlementDays}</span>
+            <input
+              required
+              type="number"
+              min="0"
+              step="0.5"
+              value={entitlementDays}
+              onChange={event => setEntitlementDays(event.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+            />
+          </label>
+          <label className="space-y-2 text-xs font-semibold text-slate-300">
+            <span>{t.holidayUsedDays}</span>
+            <input
+              required
+              type="number"
+              min="0"
+              step="0.5"
+              value={usedDays}
+              onChange={event => setUsedDays(event.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
+            />
+          </label>
+          <div className="md:col-span-3 flex justify-end">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-400"
+            >
+              <Plus className="w-4 h-4" />
+              {t.holidaySaveBalance}
+            </button>
+          </div>
+        </form>
+        {selectedYearLeaveRecords.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-850/50 p-8 text-center text-sm text-slate-400">
+            {t.holidayAnnualLeaveEmpty}
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-850">
+            <table className="w-full min-w-[620px] text-right text-sm">
+              <thead className="bg-slate-900/70 text-xs text-slate-400">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">{t.holidayEmployee}</th>
+                  <th className="px-5 py-3 font-semibold">{t.holidayEntitlementDays}</th>
+                  <th className="px-5 py-3 font-semibold">{t.holidayUsedDays}</th>
+                  <th className="px-5 py-3 font-semibold">{t.holidayRemainingDays}</th>
+                  <th className="px-5 py-3 text-center font-semibold">{t.colActions}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {selectedYearLeaveRecords.map(record => (
+                  <tr key={record.id} className="hover:bg-slate-800/40">
+                    <td className="px-5 py-3 font-semibold text-white">
+                      {employees.find(employee => employee.id === record.employeeId)?.fullName ?? '—'}
+                    </td>
+                    <td className="px-5 py-3 text-slate-200">{record.entitlementDays} {t.holidayDaysUnit}</td>
+                    <td className="px-5 py-3 text-slate-200">{record.usedDays} {t.holidayDaysUnit}</td>
+                    <td className={`px-5 py-3 font-bold ${
+                      record.entitlementDays - record.usedDays < 0 ? 'text-rose-300' : 'text-emerald-300'
+                    }`}>
+                      {record.entitlementDays - record.usedDays} {t.holidayDaysUnit}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => editAnnualLeaveRecord(record)}
+                        title={t.holidayEditBalance}
+                        className="rounded-lg px-3 py-2 text-xs font-semibold text-amber-300 transition-colors hover:bg-amber-500/10"
+                      >
+                        {t.holidayEditBalance}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteAnnualLeaveRecord(record.id)}
+                        title={t.holidayDeleteRecord}
+                        aria-label={`${t.holidayDeleteRecord}: ${employees.find(employee => employee.id === record.employeeId)?.fullName ?? ''}`}
+                        className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-rose-500/10 hover:text-rose-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {sortedHolidays.length === 0 ? (

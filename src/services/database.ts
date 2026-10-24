@@ -2,6 +2,8 @@ import {
   Employee,
   AttendanceRecord,
   OfficialHoliday,
+  HolidayWorkRecord,
+  AnnualLeaveRecord,
   AdvanceRecord,
   BonusPenaltyRecord,
   TipsPoolRecord,
@@ -18,6 +20,8 @@ export interface DatabaseState {
   employees: Employee[];
   attendance: AttendanceRecord[];
   officialHolidays: OfficialHoliday[];
+  holidayWorkRecords: HolidayWorkRecord[];
+  annualLeaveRecords: AnnualLeaveRecord[];
   advances: AdvanceRecord[];
   adjustments: BonusPenaltyRecord[];
   tipsPools: TipsPoolRecord[];
@@ -501,12 +505,14 @@ function recalculateSlipAmounts(
 
 function createInitialMoroccanDatabaseState(): DatabaseState {
   return {
-    version: 7,
+    version: 8,
     lastUpdated: new Date().toISOString(),
     settings: DEFAULT_SETTINGS_MOROCCO,
     employees: [],
     attendance: [],
     officialHolidays: [],
+    holidayWorkRecords: [],
+    annualLeaveRecords: [],
     advances: [],
     adjustments: [],
     tipsPools: [],
@@ -618,7 +624,7 @@ function removeDemoData(state: DatabaseState): DatabaseState {
       };
     });
 
-  state.version = 7;
+  state.version = 8;
   return state;
 }
 
@@ -639,7 +645,7 @@ class DatabaseManager {
           parsed &&
           typeof parsed === 'object' &&
           'version' in parsed &&
-          (parsed.version === 2 || parsed.version === 3 || parsed.version === 4 || parsed.version === 5 || parsed.version === 6 || parsed.version === 7) &&
+          (parsed.version === 2 || parsed.version === 3 || parsed.version === 4 || parsed.version === 5 || parsed.version === 6 || parsed.version === 7 || parsed.version === 8) &&
           'employees' in parsed &&
           Array.isArray(parsed.employees) &&
           'settings' in parsed &&
@@ -657,12 +663,17 @@ class DatabaseManager {
           Array.isArray(parsed.payrollSlips)
         ) {
           const state = parsed as DatabaseState;
-          const requiresMigration = state.version < 7 || !Array.isArray(state.officialHolidays);
+          const requiresMigration = state.version < 8 ||
+            !Array.isArray(state.officialHolidays) ||
+            !Array.isArray(state.holidayWorkRecords) ||
+            !Array.isArray(state.annualLeaveRecords);
           state.officialHolidays = Array.isArray(state.officialHolidays) ? state.officialHolidays : [];
+          state.holidayWorkRecords = Array.isArray(state.holidayWorkRecords) ? state.holidayWorkRecords : [];
+          state.annualLeaveRecords = Array.isArray(state.annualLeaveRecords) ? state.annualLeaveRecords : [];
           const migrated = removeDemoData(
             state.version < 5 ? migratePayrollCalculations(state) : state
           );
-          migrated.version = 7;
+          migrated.version = 8;
           if (requiresMigration) this.saveToStorage(migrated);
           return migrated;
         }
@@ -717,6 +728,14 @@ class DatabaseManager {
 
   public getOfficialHolidays(): OfficialHoliday[] {
     return this.state.officialHolidays;
+  }
+
+  public getHolidayWorkRecords(): HolidayWorkRecord[] {
+    return this.state.holidayWorkRecords;
+  }
+
+  public getAnnualLeaveRecords(): AnnualLeaveRecord[] {
+    return this.state.annualLeaveRecords;
   }
 
   public getAdvances(): AdvanceRecord[] {
@@ -801,6 +820,39 @@ class DatabaseManager {
 
   public deleteOfficialHoliday(id: string): void {
     this.state.officialHolidays = this.state.officialHolidays.filter(holiday => holiday.id !== id);
+    this.notify();
+  }
+
+  public addHolidayWorkRecord(record: Omit<HolidayWorkRecord, 'id'>): HolidayWorkRecord {
+    const savedRecord: HolidayWorkRecord = { ...record, id: `holiday-work-${Date.now()}` };
+    this.state.holidayWorkRecords.unshift(savedRecord);
+    this.notify();
+    return savedRecord;
+  }
+
+  public deleteHolidayWorkRecord(id: string): void {
+    this.state.holidayWorkRecords = this.state.holidayWorkRecords.filter(record => record.id !== id);
+    this.notify();
+  }
+
+  public saveAnnualLeaveRecord(record: Omit<AnnualLeaveRecord, 'id'>): AnnualLeaveRecord {
+    const existing = this.state.annualLeaveRecords.find(
+      saved => saved.employeeId === record.employeeId && saved.year === record.year
+    );
+    const savedRecord: AnnualLeaveRecord = {
+      ...record,
+      id: existing?.id ?? `annual-leave-${Date.now()}`,
+    };
+    this.state.annualLeaveRecords = [
+      savedRecord,
+      ...this.state.annualLeaveRecords.filter(saved => saved.id !== savedRecord.id),
+    ];
+    this.notify();
+    return savedRecord;
+  }
+
+  public deleteAnnualLeaveRecord(id: string): void {
+    this.state.annualLeaveRecords = this.state.annualLeaveRecords.filter(record => record.id !== id);
     this.notify();
   }
 
@@ -1040,7 +1092,7 @@ class DatabaseManager {
       const parsed = JSON.parse(jsonString) as DatabaseState;
       if (
         !parsed ||
-        (parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5 && parsed.version !== 6 && parsed.version !== 7) ||
+        (parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5 && parsed.version !== 6 && parsed.version !== 7 && parsed.version !== 8) ||
         !parsed.settings ||
         !Array.isArray(parsed.employees) ||
         !Array.isArray(parsed.attendance) ||
@@ -1054,10 +1106,12 @@ class DatabaseManager {
       }
       const state = parsed as DatabaseState;
       state.officialHolidays = Array.isArray(state.officialHolidays) ? state.officialHolidays : [];
+      state.holidayWorkRecords = Array.isArray(state.holidayWorkRecords) ? state.holidayWorkRecords : [];
+      state.annualLeaveRecords = Array.isArray(state.annualLeaveRecords) ? state.annualLeaveRecords : [];
       this.state = removeDemoData(
         parsed.version < 5 ? migratePayrollCalculations(state) : state
       );
-      this.state.version = 7;
+      this.state.version = 8;
       this.notify();
       return { success: true, message: 'تم استعادة قاعدة بيانات DATABEST بنجاح' };
     } catch (e) {

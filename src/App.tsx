@@ -134,15 +134,7 @@ export default function App() {
             employees={dbState.employees}
             currentRun={currentRun}
             advances={dbState.advances}
-            tipsPools={dbState.tipsPools}
-            attendance={dbState.attendance}
             onNavigateTab={(tab) => setActiveTab(tab)}
-            onOpenNewEmployee={handleOpenNewEmployee}
-            onGeneratePayroll={handleGeneratePayroll}
-            onOpenQuickAttendance={handleOpenQuickAttendance}
-            onAddEmployee={(emp) => databest.addEmployee(emp)}
-            onUpdateEmployee={(id, updates) => databest.updateEmployee(id, updates)}
-            onDeleteEmployee={(id) => databest.deleteEmployee(id)}
           />
         )}
 
@@ -211,9 +203,16 @@ export default function App() {
         {activeTab === 'holidays' && (
           <OfficialHolidaysView
             holidays={dbState.officialHolidays}
+            employees={dbState.employees}
+            holidayWorkRecords={dbState.holidayWorkRecords}
+            annualLeaveRecords={dbState.annualLeaveRecords}
             language={dbState.settings.language}
             onAddHoliday={(holiday) => databest.addOfficialHoliday(holiday)}
             onDeleteHoliday={(id) => databest.deleteOfficialHoliday(id)}
+            onAddHolidayWorkRecord={(record) => databest.addHolidayWorkRecord(record)}
+            onDeleteHolidayWorkRecord={(id) => databest.deleteHolidayWorkRecord(id)}
+            onSaveAnnualLeaveRecord={(record) => databest.saveAnnualLeaveRecord(record)}
+            onDeleteAnnualLeaveRecord={(id) => databest.deleteAnnualLeaveRecord(id)}
           />
         )}
 
