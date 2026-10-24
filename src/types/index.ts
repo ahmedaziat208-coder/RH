@@ -62,6 +62,7 @@ export interface OfficialHoliday {
   id: string;
   name: string;
   date: string;               // YYYY-MM-DD
+  category?: 'RELIGIOUS' | 'NATIONAL';
   notes?: string;
 }
 

@@ -26,6 +26,29 @@ export interface TranslationDictionary {
   navDatabest: string;
   holidaysTitle: string;
   holidaysDescription: string;
+  holidayYear: string;
+  holidayCalendarTitle: string;
+  holidayCalendarNote: string;
+  holidayCategory: string;
+  holidayCategoryNational: string;
+  holidayCategoryReligious: string;
+  holidayCategoryOther: string;
+  holidayAddToList: string;
+  holidayAlreadyAdded: string;
+  holidayNameNewYear: string;
+  holidayNameManifesto: string;
+  holidayNameAmazighNewYear: string;
+  holidayNameLabourDay: string;
+  holidayNameThroneDay: string;
+  holidayNameOuedEdDahab: string;
+  holidayNameRevolution: string;
+  holidayNameYouthDay: string;
+  holidayNameGreenMarch: string;
+  holidayNameIndependenceDay: string;
+  holidayNameIslamicNewYear: string;
+  holidayNameMawlid: string;
+  holidayNameEidAlFitr: string;
+  holidayNameEidAlAdha: string;
   holidayName: string;
   holidayDate: string;
   holidayNotes: string;
@@ -176,6 +199,29 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     navDatabest: 'قاعدة البيانات DATABEST',
     holidaysTitle: 'العطل الرسمية',
     holidaysDescription: 'سجل وتابع مواعيد العطل الرسمية الخاصة بالمطعم.',
+    holidayYear: 'السنة',
+    holidayCalendarTitle: 'جدول العطل الوطنية والدينية حسب السنة',
+    holidayCalendarNote: 'تواريخ الأعياد الدينية تقديرية وقد تتغير بيوم حسب الإعلان الرسمي ورؤية الهلال في المغرب.',
+    holidayCategory: 'نوع العطلة',
+    holidayCategoryNational: 'وطنية',
+    holidayCategoryReligious: 'دينية',
+    holidayCategoryOther: 'غير محددة',
+    holidayAddToList: 'إضافة إلى عطل المطعم',
+    holidayAlreadyAdded: 'مضافة',
+    holidayNameNewYear: 'رأس السنة الميلادية',
+    holidayNameManifesto: 'ذكرى تقديم وثيقة الاستقلال',
+    holidayNameAmazighNewYear: 'رأس السنة الأمازيغية',
+    holidayNameLabourDay: 'عيد الشغل',
+    holidayNameThroneDay: 'عيد العرش',
+    holidayNameOuedEdDahab: 'ذكرى استرجاع وادي الذهب',
+    holidayNameRevolution: 'ذكرى ثورة الملك والشعب',
+    holidayNameYouthDay: 'عيد الشباب',
+    holidayNameGreenMarch: 'ذكرى المسيرة الخضراء',
+    holidayNameIndependenceDay: 'عيد الاستقلال',
+    holidayNameIslamicNewYear: 'فاتح محرم - رأس السنة الهجرية',
+    holidayNameMawlid: 'عيد المولد النبوي',
+    holidayNameEidAlFitr: 'عيد الفطر',
+    holidayNameEidAlAdha: 'عيد الأضحى',
     holidayName: 'اسم العطلة',
     holidayDate: 'تاريخ العطلة',
     holidayNotes: 'ملاحظات (اختياري)',
@@ -319,6 +365,29 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     navDatabest: 'Base de Données DATABEST',
     holidaysTitle: 'Jours fériés',
     holidaysDescription: 'Enregistrez et suivez les jours fériés de votre établissement.',
+    holidayYear: 'Année',
+    holidayCalendarTitle: 'Calendrier annuel des jours fériés nationaux et religieux',
+    holidayCalendarNote: 'Les dates des fêtes religieuses sont estimatives et peuvent varier d’un jour selon l’annonce officielle et l’observation du croissant au Maroc.',
+    holidayCategory: 'Type de jour férié',
+    holidayCategoryNational: 'National',
+    holidayCategoryReligious: 'Religieux',
+    holidayCategoryOther: 'Non précisé',
+    holidayAddToList: 'Ajouter aux jours fériés',
+    holidayAlreadyAdded: 'Ajouté',
+    holidayNameNewYear: 'Nouvel An',
+    holidayNameManifesto: 'Manifeste de l’Indépendance',
+    holidayNameAmazighNewYear: 'Nouvel An amazigh',
+    holidayNameLabourDay: 'Fête du Travail',
+    holidayNameThroneDay: 'Fête du Trône',
+    holidayNameOuedEdDahab: 'Récupération de Oued Ed-Dahab',
+    holidayNameRevolution: 'Révolution du Roi et du Peuple',
+    holidayNameYouthDay: 'Fête de la Jeunesse',
+    holidayNameGreenMarch: 'Marche Verte',
+    holidayNameIndependenceDay: 'Fête de l’Indépendance',
+    holidayNameIslamicNewYear: '1er Moharram - Nouvel An hégirien',
+    holidayNameMawlid: 'Aïd Al Mawlid Annabaoui',
+    holidayNameEidAlFitr: 'Aïd Al Fitr',
+    holidayNameEidAlAdha: 'Aïd Al Adha',
     holidayName: 'Nom du jour férié',
     holidayDate: 'Date du jour férié',
     holidayNotes: 'Notes (facultatif)',
@@ -462,6 +531,29 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     navDatabest: 'Database DATABEST',
     holidaysTitle: 'Public Holidays',
     holidaysDescription: 'Record and track your restaurant’s official holidays.',
+    holidayYear: 'Year',
+    holidayCalendarTitle: 'Annual national and religious holiday calendar',
+    holidayCalendarNote: 'Religious holiday dates are estimates and may shift by a day depending on Morocco’s official announcement and moon sighting.',
+    holidayCategory: 'Holiday type',
+    holidayCategoryNational: 'National',
+    holidayCategoryReligious: 'Religious',
+    holidayCategoryOther: 'Unspecified',
+    holidayAddToList: 'Add to restaurant holidays',
+    holidayAlreadyAdded: 'Added',
+    holidayNameNewYear: 'New Year’s Day',
+    holidayNameManifesto: 'Independence Manifesto Day',
+    holidayNameAmazighNewYear: 'Amazigh New Year',
+    holidayNameLabourDay: 'Labour Day',
+    holidayNameThroneDay: 'Throne Day',
+    holidayNameOuedEdDahab: 'Oued Ed-Dahab Recovery Day',
+    holidayNameRevolution: 'Revolution of the King and the People',
+    holidayNameYouthDay: 'Youth Day',
+    holidayNameGreenMarch: 'Green March Day',
+    holidayNameIndependenceDay: 'Independence Day',
+    holidayNameIslamicNewYear: '1 Muharram - Islamic New Year',
+    holidayNameMawlid: 'Prophet’s Birthday',
+    holidayNameEidAlFitr: 'Eid al-Fitr',
+    holidayNameEidAlAdha: 'Eid al-Adha',
     holidayName: 'Holiday name',
     holidayDate: 'Holiday date',
     holidayNotes: 'Notes (optional)',
