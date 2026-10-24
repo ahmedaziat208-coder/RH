@@ -41,7 +41,7 @@ const DEFAULT_SETTINGS_MOROCCO: RestaurantSettings = {
   currency: 'MAD',
   currencySymbol: 'د.م',
   defaultOvertimeRate: 1.25, // 25% إضافية نهاراً / 50% ليلاً وفق مدونة الشغل المغربية
-  defaultCnssRate: 4.48,     // نسبة CNSS للمأجور (سقف 6000 درهم)
+  defaultCnssRate: 4.48,     // نسبة CNSS للموظف (سقف 6000 درهم)
   defaultAmoRate: 2.26,      // التأمين الإجباري عن المرض AMO
   defaultMealAllowance: 500, // منحة القفة والوجبة (Indemnité de Panier)
   defaultTransportAllowance: 400, // تعويض النقل (Indemnité de Transport)

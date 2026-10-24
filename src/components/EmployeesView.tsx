@@ -492,7 +492,7 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                   <UserCheck className="w-5 h-5" />
                 </span>
                 <h3 className="text-base font-bold text-white">
-                  {editingEmployee ? 'تعديل بيانات مأجور المطعم' : 'تسجيل موظف جديد في نظام RH'}
+                  {editingEmployee ? 'تعديل بيانات الموظف' : 'تسجيل موظف جديد في نظام RH'}
                 </h3>
               </div>
               <button
