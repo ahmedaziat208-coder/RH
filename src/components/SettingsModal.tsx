@@ -273,58 +273,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Receipt className="w-4 h-4" />
               {t.payrollRulesTitle}
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">{t.cnssEmployeeRate}</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="10"
-                  value={form.defaultCnssRate}
-                  onChange={(e) => setForm({ ...form, defaultCnssRate: Number(e.target.value) })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
-                />
-                <span className="text-[10px] text-slate-500">{t.cnssCeilingNote}</span>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">{t.amoRate}</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="10"
-                  value={form.defaultAmoRate}
-                  onChange={(e) => setForm({ ...form, defaultAmoRate: Number(e.target.value) })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
-                />
-                <span className="text-[10px] text-slate-500">{t.amoNote}</span>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">{t.mealAllowance}</label>
-                <input
-                  type="number"
-                  step="50"
-                  min="0"
-                  value={form.defaultMealAllowance}
-                  onChange={(e) => setForm({ ...form, defaultMealAllowance: Number(e.target.value) })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
-                />
-              </div>
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+              <p className="text-sm text-slate-200">{t.payrollCalculationFormula}</p>
+              <p className="mt-2 text-xs text-amber-300">{t.payrollCalculationWarning}</p>
             </div>
-          </div>
-
-          {/* 4. Footer Note for payslips */}
-          <div className="pt-3 border-t border-slate-800">
-            <label className="block text-slate-300 font-semibold mb-1">{t.payslipFooterNote}</label>
-            <input
-              type="text"
-              value={form.stampNote}
-              onChange={(e) => setForm({ ...form, stampNote: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
-            />
           </div>
 
           {/* Actions */}

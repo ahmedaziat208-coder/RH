@@ -47,7 +47,7 @@ const DEFAULT_SETTINGS_MOROCCO: RestaurantSettings = {
   defaultTransportAllowance: 400, // تعويض النقل (Indemnité de Transport)
   restaurantManager: 'هشام بنسودة (المدير العام)',
   rhManager: 'سارة التازي (مسؤولة RH)',
-  stampNote: 'وثيقة رسمية مطابقة لمقتضيات مدونة الشغل المغربية وقوانين CNSS - مطعم أوبايولي الدار البيضاء',
+  stampNote: 'احتساب إداري مبسط ولا يمثل قسيمة راتب قانونية',
   language: 'ar',
 };
 
@@ -372,137 +372,31 @@ const SEED_TIPS_POOLS_MOROCCO: TipsPoolRecord[] = [
 export function computeMoroccanSlipForEmployee(
   employee: Employee,
   month: string,
-  settings: RestaurantSettings,
+  _settings: RestaurantSettings,
   advances: AdvanceRecord[],
-  adjustments: BonusPenaltyRecord[],
-  tipsPools: TipsPoolRecord[],
-  overtimeHoursCount: number = 0,
+  _adjustments: BonusPenaltyRecord[],
+  _tipsPools: TipsPoolRecord[],
+  _overtimeHoursCount: number = 0,
   attendanceRecords: AttendanceRecord[] = []
 ): PayrollSlip {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
     throw new RangeError(`Invalid payroll month: ${month}`);
   }
 
-  const [yearText, monthText] = month.split('-');
-  const payrollYear = Number(yearText);
-  const payrollMonth = Number(monthText);
   const employeeAttendance = attendanceRecords.filter(
     record => record.employeeId === employee.id && record.date.startsWith(month)
   );
   const absentDays = employeeAttendance.filter(record => record.status === 'ABSENT').length;
-  const paidAttendance = employeeAttendance.filter(
-    record => record.status === 'PRESENT' || record.status === 'LATE'
-  );
-  const recordedRegularHours = paidAttendance.reduce(
-    (sum, record) => sum + Math.max(0, record.regularHours || 0),
-    0
-  );
-  const monthlyHours = 191;
-  const standardWorkDays = 26;
-
-  let baseSalary: number;
-  let daysWorked: number;
-  let workedHours: number;
-  if (employee.salaryType === 'DAILY') {
-    daysWorked = paidAttendance.length;
-    workedHours = recordedRegularHours;
-    baseSalary = Math.round(employee.baseSalary * daysWorked);
-  } else if (employee.salaryType === 'HOURLY') {
-    daysWorked = paidAttendance.length;
-    workedHours = recordedRegularHours;
-    baseSalary = Math.round(employee.baseSalary * recordedRegularHours);
-  } else {
-    daysWorked = Math.max(0, standardWorkDays - absentDays);
-    workedHours = Math.max(0, monthlyHours - (absentDays * monthlyHours) / standardWorkDays);
-    baseSalary = Math.round(Math.max(
-      0,
-      employee.baseSalary - (absentDays * employee.baseSalary) / standardWorkDays
-    ));
-  }
-
-  const hourlyRate = employee.salaryType === 'HOURLY'
-    ? employee.baseSalary
-    : employee.salaryType === 'DAILY'
-      ? employee.baseSalary / 8
-      : employee.baseSalary / monthlyHours;
-  const overtimeRate = hourlyRate * settings.defaultOvertimeRate;
-  const overtimeAmount = Math.round(Math.max(0, overtimeHoursCount) * overtimeRate);
-
-  // Tips share for this month (البقشيش)
-  const poolTipsShare = tipsPools
-    .filter(tp => tp.month === month && tp.isAppliedToPayroll)
-    .reduce((sum, tp) => {
-      const share = tp.shares.find(s => s.employeeId === employee.id);
-      return sum + (share ? share.amount : 0);
-    }, 0);
-
-  // Seniority rates are 5%, 10%, 15%, 20%, and 25% after 2, 5, 12, 20, and 25 years.
-  const hireDate = new Date(`${employee.hireDate}T00:00:00`);
-  const monthEnd = new Date(payrollYear, payrollMonth, 0);
-  let yearsOfService = monthEnd.getFullYear() - hireDate.getFullYear();
-  if (
-    monthEnd.getMonth() < hireDate.getMonth() ||
-    (monthEnd.getMonth() === hireDate.getMonth() && monthEnd.getDate() < hireDate.getDate())
-  ) {
-    yearsOfService -= 1;
-  }
-  let seniorityRate = 0;
-  if (yearsOfService >= 25) seniorityRate = 0.25;
-  else if (yearsOfService >= 20) seniorityRate = 0.20;
-  else if (yearsOfService >= 12) seniorityRate = 0.15;
-  else if (yearsOfService >= 5) seniorityRate = 0.10;
-  else if (yearsOfService >= 2) seniorityRate = 0.05;
-  // Bonuses & allowances
-  const employeeAdjustments = adjustments.filter(
-    adj => adj.employeeId === employee.id && adj.month === month
-  );
-  const manualSeniorityBonus = employeeAdjustments
-    .filter(adj => adj.type === 'BONUS' && adj.category === 'SENIORITY')
-    .reduce((sum, adj) => sum + adj.amount, 0);
-  const seniorityBonus = Math.round(baseSalary * seniorityRate) + manualSeniorityBonus;
-
-  const performanceBonus = employeeAdjustments
-    .filter(adj => adj.type === 'BONUS' && adj.category === 'PERFORMANCE')
-    .reduce((sum, adj) => sum + adj.amount, 0);
-
-  const extraMeal = employeeAdjustments
-    .filter(adj => adj.type === 'BONUS' && adj.category === 'MEAL_ALLOWANCE')
-    .reduce((sum, adj) => sum + adj.amount, 0);
-  const earnedDaysRatio = Math.min(1, daysWorked / standardWorkDays);
-  const mealAllowance = Math.round(settings.defaultMealAllowance * earnedDaysRatio) + extraMeal;
-
-  const extraTransport = employeeAdjustments
-    .filter(adj => adj.type === 'BONUS' && adj.category === 'TRANSPORT_ALLOWANCE')
-    .reduce((sum, adj) => sum + adj.amount, 0);
-  const transportAllowance = Math.round(settings.defaultTransportAllowance * earnedDaysRatio) + extraTransport;
-  const tipsShare =
-    poolTipsShare +
-    employeeAdjustments
-      .filter(adj => adj.type === 'BONUS' && adj.category === 'TIPS_SHARE')
-      .reduce((sum, adj) => sum + adj.amount, 0);
-
-  // Gross Salary Brut Global
-  const totalGrossSalary =
-    baseSalary +
-    overtimeAmount +
-    tipsShare +
-    seniorityBonus +
-    mealAllowance +
-    transportAllowance +
-    performanceBonus;
-
-  const cnssRate = settings.defaultCnssRate;
-  const amoRate = settings.defaultAmoRate;
-
-  // Advances deducted this month (Acomptes)
+  const sickDays = 0;
+  const restDayWorkDays = employeeAttendance.filter(
+    record => record.overtimePeriod === 'REST_DAY'
+  ).length;
+  const dailyAttendanceHours = employeeAttendance
+    .filter(record => record.status === 'PRESENT' || record.status === 'LATE')
+    .reduce((sum, record) => sum + Math.max(0, record.regularHours || 0), 0);
   const advancesDeducted = advances
     .filter(adv => adv.employeeId === employee.id && adv.deductionMonth === month && adv.status === 'APPROVED')
     .reduce((sum, adv) => sum + adv.amount, 0);
-
-  // Penalties (كسر صحون، تأخيرات)
-  const penaltiesDeducted = employeeAdjustments
-    .filter(adj => adj.type === 'PENALTY')
-    .reduce((sum, adj) => sum + adj.amount, 0);
 
   const slip: PayrollSlip = {
     id: `slip-${month}-${employee.id}`,
@@ -517,84 +411,73 @@ export function computeMoroccanSlipForEmployee(
     contractType: employee.contractType,
     salaryType: employee.salaryType,
     month,
-    baseSalary,
-    daysWorked,
-    workedHours,
-    overtimeHours: overtimeHoursCount,
-    overtimeRate,
-    overtimeAmount,
-    tipsShare,
-    seniorityBonus,
-    mealAllowance,
-    transportAllowance,
-    performanceBonus,
-    totalGrossSalary,
-    cnssRate,
+    payrollFormulaVersion: 1,
+    baseSalary: employee.baseSalary,
+    sickDays,
+    absentDays,
+    doubleShiftCount: 0,
+    restDayWorkDays,
+    daysWorked: Math.max(0, 26 - absentDays - sickDays),
+    workedHours: dailyAttendanceHours,
+    overtimeHours: 0,
+    overtimeRate: 0,
+    overtimeAmount: 0,
+    tipsShare: 0,
+    seniorityBonus: 0,
+    mealAllowance: 0,
+    transportAllowance: 0,
+    performanceBonus: 0,
+    totalGrossSalary: employee.baseSalary,
+    cnssRate: 0,
     cnssAmount: 0,
-    amoRate,
+    amoRate: 0,
     amoAmount: 0,
     irAmount: 0,
     advancesDeducted,
-    penaltiesDeducted,
+    penaltiesDeducted: 0,
     totalDeductions: 0,
     netSalary: 0,
     status: 'DRAFT',
     paymentMethod: 'BANK_TRANSFER',
   };
-  return recalculateSlipAmounts(slip, settings);
-}
-
-function calculateAnnualIncomeTax(annualTaxableIncome: number): number {
-  const brackets = [
-    { ceiling: 40_000, rate: 0 },
-    { ceiling: 60_000, rate: 0.10 },
-    { ceiling: 80_000, rate: 0.20 },
-    { ceiling: 100_000, rate: 0.30 },
-    { ceiling: 180_000, rate: 0.34 },
-    { ceiling: Number.POSITIVE_INFINITY, rate: 0.37 },
-  ];
-
-  let tax = 0;
-  let lowerBound = 0;
-  for (const bracket of brackets) {
-    const taxableInBracket = Math.max(
-      0,
-      Math.min(annualTaxableIncome, bracket.ceiling) - lowerBound
-    );
-    tax += taxableInBracket * bracket.rate;
-    if (annualTaxableIncome <= bracket.ceiling) break;
-    lowerBound = bracket.ceiling;
-  }
-  return tax;
+  return recalculateSlipAmounts(slip, _settings);
 }
 
 function recalculateSlipAmounts(
   slip: PayrollSlip,
-  settings: RestaurantSettings
+  _settings: RestaurantSettings
 ): PayrollSlip {
+  const dailySalary = slip.baseSalary / 26;
+  const sickDays = Math.max(0, slip.sickDays ?? 0);
+  const absentDays = Math.max(0, slip.absentDays ?? 0);
+  const doubleShiftCount = Math.max(0, slip.doubleShiftCount ?? 0);
+  const restDayWorkDays = Math.max(0, slip.restDayWorkDays ?? 0);
+  const sicknessDeduction = Math.round(dailySalary * sickDays);
+  const absenceDeduction = Math.round(dailySalary * absentDays);
+  const doubleShiftAmount = Math.round(dailySalary * doubleShiftCount);
+  const restDayWorkAmount = Math.round(dailySalary * restDayWorkDays);
   const totalGrossSalary =
     slip.baseSalary +
-    slip.overtimeAmount +
-    slip.tipsShare +
-    slip.seniorityBonus +
-    slip.mealAllowance +
-    slip.transportAllowance +
-    slip.performanceBonus;
-  const taxableGross = Math.max(0, totalGrossSalary - slip.mealAllowance - slip.transportAllowance);
-  const cnssBase = Math.min(6000, taxableGross);
-  const cnssAmount = Math.round(cnssBase * (settings.defaultCnssRate / 100));
-  const amoAmount = Math.round(taxableGross * (settings.defaultAmoRate / 100));
-  const professionalExpenses = Math.min(2500, taxableGross * 0.20);
-  const monthlyTaxableIncome = Math.max(
-    0,
-    taxableGross - professionalExpenses - cnssAmount - amoAmount
-  );
-  const irAmount = Math.round(calculateAnnualIncomeTax(monthlyTaxableIncome * 12) / 12);
-  const totalDeductions =
-    cnssAmount + amoAmount + irAmount + slip.advancesDeducted + slip.penaltiesDeducted;
+    doubleShiftAmount +
+    restDayWorkAmount;
+  const cnssAmount = 0;
+  const amoAmount = 0;
+  const irAmount = 0;
+  const totalDeductions = sicknessDeduction + absenceDeduction + slip.advancesDeducted;
 
   return {
     ...slip,
+    sickDays,
+    absentDays,
+    doubleShiftCount,
+    restDayWorkDays,
+    overtimeAmount: 0,
+    tipsShare: 0,
+    seniorityBonus: 0,
+    mealAllowance: 0,
+    transportAllowance: 0,
+    performanceBonus: 0,
+    penaltiesDeducted: 0,
     totalGrossSalary,
     cnssAmount,
     amoAmount,
@@ -685,7 +568,7 @@ function createInitialMoroccanDatabaseState(): DatabaseState {
   };
 
   return {
-    version: 3,
+    version: 5,
     lastUpdated: new Date().toISOString(),
     settings,
     employees: SEED_EMPLOYEES_MOROCCO,
@@ -702,6 +585,11 @@ function migratePayrollCalculations(state: DatabaseState): DatabaseState {
   for (const run of state.payrollRuns) {
     if (run.status === 'PAID') continue;
 
+    const previousSlips = new Map(
+      state.payrollSlips
+        .filter(slip => slip.month === run.month)
+        .map(slip => [slip.employeeId, slip])
+    );
     const slips = state.employees
       .filter(employee => employee.status !== 'TERMINATED')
       .map(employee => {
@@ -712,7 +600,7 @@ function migratePayrollCalculations(state: DatabaseState): DatabaseState {
           (sum, record) => sum + Math.max(0, record.overtimeHours || 0),
           0
         );
-        return computeMoroccanSlipForEmployee(
+        const generatedSlip = computeMoroccanSlipForEmployee(
           employee,
           run.month,
           state.settings,
@@ -722,6 +610,19 @@ function migratePayrollCalculations(state: DatabaseState): DatabaseState {
           overtimeHours,
           attendance
         );
+        const previousSlip = previousSlips.get(employee.id);
+        return previousSlip
+          ? recalculateSlipAmounts({
+              ...generatedSlip,
+              sickDays: previousSlip.sickDays ?? generatedSlip.sickDays,
+              absentDays: previousSlip.absentDays ?? generatedSlip.absentDays,
+              doubleShiftCount: previousSlip.doubleShiftCount ?? generatedSlip.doubleShiftCount,
+              restDayWorkDays: previousSlip.restDayWorkDays ?? generatedSlip.restDayWorkDays,
+              advancesDeducted: previousSlip.payrollFormulaVersion === 1
+                ? previousSlip.advancesDeducted
+                : generatedSlip.advancesDeducted,
+            }, state.settings)
+          : generatedSlip;
       });
 
     state.payrollSlips = [
@@ -736,7 +637,7 @@ function migratePayrollCalculations(state: DatabaseState): DatabaseState {
     run.totalDeductions = slips.reduce((sum, slip) => sum + slip.totalDeductions, 0);
     run.status = 'DRAFT';
   }
-  state.version = 3;
+  state.version = 5;
   return state;
 }
 
@@ -757,7 +658,7 @@ class DatabaseManager {
           parsed &&
           typeof parsed === 'object' &&
           'version' in parsed &&
-          (parsed.version === 2 || parsed.version === 3) &&
+          (parsed.version === 2 || parsed.version === 3 || parsed.version === 4 || parsed.version === 5) &&
           'employees' in parsed &&
           Array.isArray(parsed.employees) &&
           'settings' in parsed &&
@@ -775,7 +676,7 @@ class DatabaseManager {
           Array.isArray(parsed.payrollSlips)
         ) {
           const state = parsed as DatabaseState;
-          if (state.version === 2) {
+          if (state.version < 5) {
             const migrated = migratePayrollCalculations(state);
             this.saveToStorage(migrated);
             return migrated;
@@ -1007,6 +908,9 @@ class DatabaseManager {
       throw new RangeError(`Invalid payroll month: ${month}`);
     }
 
+    const existingSlips = this.state.payrollSlips.filter(s => s.month === month);
+    const previousSlipByEmployee = new Map(existingSlips.map(slip => [slip.employeeId, slip]));
+
     // Remove old slips for this month
     this.state.payrollSlips = this.state.payrollSlips.filter(s => s.month !== month);
 
@@ -1017,7 +921,7 @@ class DatabaseManager {
       );
       const totalOvertime = employeeAtt.reduce((sum, a) => sum + (a.overtimeHours || 0), 0);
 
-      return computeMoroccanSlipForEmployee(
+      const generatedSlip = computeMoroccanSlipForEmployee(
         emp,
         month,
         this.state.settings,
@@ -1027,6 +931,17 @@ class DatabaseManager {
         totalOvertime,
         employeeAtt
       );
+      const previousSlip = previousSlipByEmployee.get(emp.id);
+      return previousSlip
+        ? recalculateSlipAmounts({
+            ...generatedSlip,
+            sickDays: previousSlip.sickDays ?? generatedSlip.sickDays,
+            absentDays: previousSlip.absentDays ?? generatedSlip.absentDays,
+            doubleShiftCount: previousSlip.doubleShiftCount ?? generatedSlip.doubleShiftCount,
+            restDayWorkDays: previousSlip.restDayWorkDays ?? generatedSlip.restDayWorkDays,
+            advancesDeducted: previousSlip.advancesDeducted,
+          }, this.state.settings)
+        : generatedSlip;
     });
 
     this.state.payrollSlips.push(...newSlips);
@@ -1125,7 +1040,7 @@ class DatabaseManager {
       const parsed = JSON.parse(jsonString) as DatabaseState;
       if (
         !parsed ||
-        (parsed.version !== 2 && parsed.version !== 3) ||
+        (parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5) ||
         !parsed.settings ||
         !Array.isArray(parsed.employees) ||
         !Array.isArray(parsed.attendance) ||
@@ -1137,7 +1052,7 @@ class DatabaseManager {
       ) {
         return { success: false, message: 'ملف النسخة الاحتياطية غير صالح أو ناقص البنية' };
       }
-      this.state = parsed.version === 2 ? migratePayrollCalculations(parsed) : parsed;
+      this.state = parsed.version < 5 ? migratePayrollCalculations(parsed) : parsed;
       this.notify();
       return { success: true, message: 'تم استعادة قاعدة بيانات DATABEST بنجاح' };
     } catch (e) {

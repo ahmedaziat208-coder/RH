@@ -19,20 +19,16 @@ interface TipsPoolViewProps {
   settings: RestaurantSettings;
   employees: Employee[];
   tipsPools: TipsPoolRecord[];
-  paidPayrollMonths: string[];
   onAddTipsPool: (pool: Omit<TipsPoolRecord, 'id'>) => void;
   onDeleteTipsPool: (id: string) => void;
-  onRefreshPayroll: (month: string) => void;
 }
 
 export const TipsPoolView: React.FC<TipsPoolViewProps> = ({
   settings,
   employees,
   tipsPools,
-  paidPayrollMonths,
   onAddTipsPool,
   onDeleteTipsPool,
-  onRefreshPayroll,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState('صندوق البقشيش');
@@ -100,11 +96,6 @@ export const TipsPoolView: React.FC<TipsPoolViewProps> = ({
   const handleCreateTipsPool = (e: React.FormEvent) => {
     e.preventDefault();
     if (totalCollected <= 0 || previewShares.length === 0) return;
-    if (paidPayrollMonths.includes(month)) {
-      window.alert('لا يمكن ترحيل البقشيش إلى مسير تم صرفه. اختر شهرًا غير مسدد.');
-      return;
-    }
-
     onAddTipsPool({
       title,
       month,
@@ -113,12 +104,11 @@ export const TipsPoolView: React.FC<TipsPoolViewProps> = ({
       totalCollected: Number(totalCollected),
       distributionMethod,
       shares: previewShares,
-      isAppliedToPayroll: true,
+      isAppliedToPayroll: false,
       notes: `تم توزيع إجمالي ${totalCollected} ${settings.currencySymbol} على ${previewShares.length} موظف`,
     });
 
     setIsModalOpen(false);
-    onRefreshPayroll(month);
   };
 
   return (
@@ -135,7 +125,7 @@ export const TipsPoolView: React.FC<TipsPoolViewProps> = ({
             صندوق بقشيش زبائن المطعم
           </h2>
           <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl">
-            ميزة خاصة بالمطاعم: تجميع إكراميات الزبائن الأسبوعية أو الشهرية وتوزيعها بعدالة على طاقم الخدمة والمطبخ والبار، مع ترحيل الحصص تلقائياً إلى قسيمة الراتب.
+            ميزة خاصة بالمطاعم: تجميع إكراميات الزبائن الأسبوعية أو الشهرية وتوزيعها بعدالة على طاقم الخدمة والمطبخ والبار. يُدار صندوق البقشيش بشكل مستقل ولا يدخل في معادلة الراتب الحالية.
           </p>
         </div>
 

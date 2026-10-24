@@ -47,6 +47,8 @@ export interface TranslationDictionary {
   address: string;
   rhManager: string;
   payrollRulesTitle: string;
+  payrollCalculationFormula: string;
+  payrollCalculationWarning: string;
   cnssEmployeeRate: string;
   cnssCeilingNote: string;
   amoRate: string;
@@ -163,8 +165,8 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     healthCardsExpiringSoon: 'شهادات صحية تنتهي قريباً',
     pendingAdvancesBadge: 'سلفيات معلقة للموافقة',
 
-    settingsTitle: 'إعدادات نظام OBAYOLI وقواعد الرواتب بالمغرب',
-    settingsSubtitle: 'المملكة المغربية • مواءمة CNSS وAMO وICE والضريبة على الدخل IR',
+    settingsTitle: 'إعدادات OBAYOLI ومعادلة الرواتب المبسطة',
+    settingsSubtitle: 'بيانات المنشأة بالمغرب • معادلة إدارية لا تشمل CNSS أو AMO أو IR',
     languageSectionTitle: 'لغة النظام (Langue du Système)',
     languageSectionDesc: 'اختر لغة واحدة للعمل بها في كامل أقسام وشاشات النظام',
     selectLanguage: 'اللغة الحالية للنظام',
@@ -182,7 +184,9 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     phone: 'الهاتف الإداري',
     address: 'العنوان والشارع',
     rhManager: 'مسؤول الموارد البشرية RH (خاتم الورقة)',
-    payrollRulesTitle: 'قواعد ومعادلات احتساب الرواتب بالمغرب (CNSS / AMO / Panier)',
+    payrollRulesTitle: 'معادلة جدول الرواتب المبسطة',
+    payrollCalculationFormula: 'اليومي = الشهري ÷ 26. الصافي = الشهري − المرض − الغياب − التسبيق + Double Shift + عمل يوم الراحة.',
+    payrollCalculationWarning: 'لا تحتسب المعادلة الحالية اقتطاعات CNSS أو AMO أو IR، ولا تستخدم كقسيمة قانونية معتمدة.',
     cnssEmployeeRate: 'نسبة اشتراك CNSS للمأجور (%)',
     cnssCeilingNote: 'القانوني 4.48% (سقف 6000 د.م)',
     amoRate: 'نسبة التأمين الإجباري AMO (%)',
@@ -293,8 +297,8 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     healthCardsExpiringSoon: 'Certificats médicaux expirant bientôt',
     pendingAdvancesBadge: 'Acomptes en attente de validation',
 
-    settingsTitle: 'Paramètres OBAYOLI & Législation Paie Maroc',
-    settingsSubtitle: 'Royaume du Maroc • Conformité CNSS, AMO, ICE & Barème IR',
+    settingsTitle: 'Paramètres OBAYOLI et calcul simplifié des salaires',
+    settingsSubtitle: 'Données de l’établissement • calcul sans retenues CNSS, AMO ou IR',
     languageSectionTitle: 'Langue du Système (System Language)',
     languageSectionDesc: 'Sélectionnez une langue unique pour l\'ensemble des modules du système',
     selectLanguage: 'Langue active de l\'application',
@@ -312,7 +316,9 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     phone: 'Téléphone Administratif',
     address: 'Adresse & Siège Social',
     rhManager: 'Responsable RH (Signature & Cachet)',
-    payrollRulesTitle: 'Règles de Calcul & Cotisations Sociales Maroc',
+    payrollRulesTitle: 'Calcul simplifié des salaires',
+    payrollCalculationFormula: 'Journalier = mensuel ÷ 26. Net = mensuel − maladie − absence − avance + Double Shift + jour de repos travaillé.',
+    payrollCalculationWarning: 'Cette formule ne calcule pas les retenues CNSS, AMO ou IR et ne constitue pas un bulletin de paie légal.',
     cnssEmployeeRate: 'Taux Salarié CNSS (%)',
     cnssCeilingNote: 'Légal: 4.48% (Plafond 6 000 MAD)',
     amoRate: 'Taux AMO Salarié (%)',
@@ -423,8 +429,8 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     healthCardsExpiringSoon: 'Health cards expiring soon',
     pendingAdvancesBadge: 'Advances pending approval',
 
-    settingsTitle: 'OBAYOLI Settings & Moroccan Payroll Regulations',
-    settingsSubtitle: 'Kingdom of Morocco • CNSS, AMO, ICE & Income Tax (IR) Compliance',
+    settingsTitle: 'OBAYOLI Settings & Simplified Payroll Formula',
+    settingsSubtitle: 'Restaurant details • formula excludes CNSS, AMO, and income-tax deductions',
     languageSectionTitle: 'System Language',
     languageSectionDesc: 'Select a single language to operate across all modules of the application',
     selectLanguage: 'Active System Language',
@@ -442,7 +448,9 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     phone: 'Administrative Phone',
     address: 'Street Address & Headquarters',
     rhManager: 'HR Manager (Signature & Stamp)',
-    payrollRulesTitle: 'Moroccan Payroll Calculation Rules & Contributions',
+    payrollRulesTitle: 'Simplified payroll calculation',
+    payrollCalculationFormula: 'Daily = monthly salary ÷ 26. Net = monthly − sick days − absences − advances + Double Shift + rest-day work.',
+    payrollCalculationWarning: 'This formula does not calculate CNSS, AMO, or income-tax deductions and is not an official payslip.',
     cnssEmployeeRate: 'CNSS Employee Contribution Rate (%)',
     cnssCeilingNote: 'Legal rate: 4.48% (Cap at 6,000 MAD)',
     amoRate: 'AMO Health Insurance Rate (%)',

@@ -202,10 +202,8 @@ export default function App() {
             settings={dbState.settings}
             employees={dbState.employees}
             tipsPools={dbState.tipsPools}
-            paidPayrollMonths={dbState.payrollRuns.filter(run => run.status === 'PAID').map(run => run.month)}
             onAddTipsPool={(pool) => databest.addTipsPool(pool)}
             onDeleteTipsPool={(id) => databest.deleteTipsPool(id)}
-            onRefreshPayroll={(month) => databest.generateOrRecalculatePayroll(month)}
           />
         )}
 

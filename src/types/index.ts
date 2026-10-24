@@ -130,9 +130,14 @@ export interface PayrollSlip {
   contractType: ContractType;
   salaryType: SalaryType;
   month: string;              // YYYY-MM
+  payrollFormulaVersion?: number;
   
   // Earnings (المستحقات - Gains Brut)
   baseSalary: number;         // الراتب الأساسي بالدرهم
+  sickDays?: number;
+  absentDays?: number;
+  doubleShiftCount?: number;
+  restDayWorkDays?: number;
   daysWorked: number;
   workedHours: number;
   overtimeHours: number;

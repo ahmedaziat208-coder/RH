@@ -5,7 +5,6 @@ import {
   CheckCircle2, 
   Printer, 
   Download, 
-  Edit3, 
   Calendar, 
   Filter, 
   Check,
@@ -42,12 +41,6 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
   const [stationFilter, setStationFilter] = useState<string>('ALL');
 
-  // Quick edit modal for slip adjustments
-  const [editingSlip, setEditingSlip] = useState<PayrollSlip | null>(null);
-  const [editOvertimeHours, setEditOvertimeHours] = useState<number>(0);
-  const [editPerformanceBonus, setEditPerformanceBonus] = useState<number>(0);
-  const [editPenalties, setEditPenalties] = useState<number>(0);
-
   const monthOptions = Array.from(new Set([
     ...payrollRuns.map(r => r.month),
     ...[0, -1, -2].map(offset => {
@@ -73,79 +66,51 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
     stationFilter === 'ALL' || employee.station === stationFilter
   );
 
-  const openEditSlip = (slip: PayrollSlip) => {
-    setEditingSlip(slip);
-    setEditOvertimeHours(slip.overtimeHours);
-    setEditPerformanceBonus(slip.performanceBonus);
-    setEditPenalties(slip.penaltiesDeducted);
-  };
-
-  const handleSaveSlipEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingSlip) return;
-
-    const overtimeRate = editingSlip.overtimeRate;
-    const overtimeAmount = Math.round(editOvertimeHours * overtimeRate);
-
-    onUpdateSlip(editingSlip.id, {
-      overtimeHours: editOvertimeHours,
-      overtimeRate,
-      overtimeAmount,
-      performanceBonus: editPerformanceBonus,
-      penaltiesDeducted: editPenalties,
-    });
-    setEditingSlip(null);
-  };
-
   const exportCsv = () => {
     if (filteredSlips.length === 0) return;
     const headers = [
       'رقم التسجيل',
       'بطاقة CIN',
-      'رقم CNSS',
       'اسم الموظف',
-      'المسمى الوظيفي',
-      'القسم',
-      'الراتب الأساسي (د.م)',
-      'ساعات إضافية',
-      'مبلغ الساعات الإضافية',
-      'حصة البقشيش',
-      'علاوة الأقدمية',
-      'منحة القفة',
-      'تعويض النقل',
-      'مكافأة أداء',
-      'الأجر الخام (Brut)',
-      'اقتطاع CNSS (4.48%)',
-      'اقتطاع AMO (2.26%)',
-      'الضريبة على الدخل IR',
-      'خصم السلفيات',
-      'صافي الأجر للدفع (Net)',
-      'الحالة',
+      'POSTE',
+      'الراتب الشهري (د.م)',
+      'الراتب اليومي (الراتب الشهري ÷ 26)',
+      'التسبيق (د.م)',
+      'أيام المرض',
+      'خصم المرض (د.م)',
+      'أيام الغياب',
+      'خصم الغياب (د.م)',
+      'عدد Double Shift',
+      'مبلغ Double Shift (د.م)',
+      'أيام عمل الراحة',
+      'مبلغ عمل الراحة (د.م)',
+      'الراتب الصافي (د.م)',
+      'حالة المعادلة',
     ];
 
-    const rows = filteredSlips.map(s => [
-      s.employeeMatricule,
-      s.cin,
-      s.cnssNumber,
-      s.employeeName,
-      s.roleTitle,
-      s.station,
-      s.baseSalary,
-      s.overtimeHours,
-      s.overtimeAmount,
-      s.tipsShare,
-      s.seniorityBonus,
-      s.mealAllowance,
-      s.transportAllowance,
-      s.performanceBonus,
-      s.totalGrossSalary,
-      s.cnssAmount,
-      s.amoAmount,
-      s.irAmount,
-      s.advancesDeducted,
-      s.netSalary,
-      s.status,
-    ]);
+    const rows = filteredSlips.map(slip => {
+      const usesCurrentFormula = slip.payrollFormulaVersion === 1;
+      const dailySalary = slip.baseSalary / 26;
+      return [
+        slip.employeeMatricule,
+        slip.cin,
+        slip.employeeName,
+        slip.roleTitle,
+        slip.baseSalary,
+        usesCurrentFormula ? dailySalary : '',
+        slip.advancesDeducted,
+        usesCurrentFormula ? slip.sickDays ?? 0 : '',
+        usesCurrentFormula ? Math.round(dailySalary * (slip.sickDays ?? 0)) : '',
+        usesCurrentFormula ? slip.absentDays ?? 0 : '',
+        usesCurrentFormula ? Math.round(dailySalary * (slip.absentDays ?? 0)) : '',
+        usesCurrentFormula ? slip.doubleShiftCount ?? 0 : '',
+        usesCurrentFormula ? Math.round(dailySalary * (slip.doubleShiftCount ?? 0)) : '',
+        usesCurrentFormula ? slip.restDayWorkDays ?? 0 : '',
+        usesCurrentFormula ? Math.round(dailySalary * (slip.restDayWorkDays ?? 0)) : '',
+        slip.netSalary,
+        usesCurrentFormula ? 'المعادلة الحالية' : 'أرشيف سابق',
+      ];
+    });
 
     const csvContent =
       'data:text/csv;charset=utf-8,\uFEFF' +
@@ -165,7 +130,9 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
       <div>
         <h1 className="text-xl font-bold text-white">جدول الرواتب</h1>
         <p className="text-sm text-slate-400 mt-1">
-          تتم إضافة الموظفين تلقائيًا من قائمة أسماء الموظفين، ثم احتساب رواتبهم عند إنشاء مسير الشهر.
+          الراتب اليومي = الراتب الشهري ÷ 26. أدخل المرض والغياب والتسبيق والورديات يدويًا؛ يُحدّث الصافي تلقائيًا.
+          لا تُخصم CNSS أو AMO أو IR في هذه المعادلة.
+          السجلات المصروفة سابقًا محفوظة بحسابها الأصلي.
         </p>
       </div>
 
@@ -201,7 +168,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
             }`}>
               <CheckCircle2 className="w-3.5 h-3.5" />
               {currentRun.status === 'PAID' ? 'تم تسديد وتحويل الرواتب بالكامل' :
-               currentRun.status === 'APPROVED' ? 'معتمد رسمياً وجاهز للتحويل البنكي' : 'مسودة قيد التدقيق'}
+               currentRun.status === 'APPROVED' ? 'معتمد وجاهز للصرف' : 'مسودة قيد التدقيق'}
             </span>
           )}
         </div>
@@ -211,11 +178,11 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
           <button
             onClick={() => onRecalculatePayroll(selectedMonth)}
             disabled={currentRun?.status === 'PAID'}
-            title="إعادة احتساب مسير الرواتب وفق نسب CNSS وAMO والضريبة IR"
+            title="إعادة احتساب الرواتب وفق الراتب الشهري والأيام والتسبيقات"
             className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Calculator className="w-3.5 h-3.5 text-amber-400" />
-            <span>إعادة احتساب الرواتب (Maroc)</span>
+            <span>إعادة احتساب الرواتب</span>
           </button>
 
           {currentRun?.status !== 'PAID' && (
@@ -253,39 +220,43 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
 
       </div>
 
-      {/* Financial Summary KPI Bar (Morocco) */}
+      {/* Payroll summary */}
       {currentRun && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-gradient-to-r from-slate-850 to-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
           <div>
-            <span className="text-[11px] text-slate-400 block font-medium">عدد المأجورين بالمسير:</span>
+            <span className="text-[11px] text-slate-400 block font-medium">عدد الموظفين:</span>
             <span className="text-xl font-bold font-mono text-white mt-1 block">
               {currentRun.totalEmployees} موظف
             </span>
           </div>
 
           <div>
-            <span className="text-[11px] text-slate-400 block font-medium">إجمالي الأجر الخام (Brut):</span>
+            <span className="text-[11px] text-slate-400 block font-medium">إجمالي الرواتب الشهرية:</span>
             <span className="text-xl font-bold font-mono text-slate-200 mt-1 block">
-              {formatCurrency(currentRun.totalGross, settings.currencySymbol)}
+              {formatCurrency(currentSlips.reduce((sum, slip) => sum + slip.baseSalary, 0), settings.currencySymbol)}
             </span>
           </div>
 
           <div>
-            <span className="text-[11px] text-slate-400 block font-medium">ساعات إضافية وبقشيش:</span>
+            <span className="text-[11px] text-slate-400 block font-medium">Double Shift وعمل يوم الراحة:</span>
             <span className="text-xl font-bold font-mono text-cyan-300 mt-1 block">
-              {formatCurrency(currentRun.totalOvertimeAmount + currentRun.totalTipsDistributed, settings.currencySymbol)}
+              {formatCurrency(currentSlips.reduce((sum, slip) =>
+                sum + Math.round((slip.baseSalary / 26) * ((slip.doubleShiftCount ?? 0) + (slip.restDayWorkDays ?? 0))), 0
+              ), settings.currencySymbol)}
             </span>
           </div>
 
           <div>
-            <span className="text-[11px] text-slate-400 block font-medium">اقتطاعات CNSS وAMO وIR:</span>
+            <span className="text-[11px] text-slate-400 block font-medium">خصم المرض والغياب والتسبيق:</span>
             <span className="text-xl font-bold font-mono text-rose-400 mt-1 block">
-              {formatCurrency(currentRun.totalDeductions, settings.currencySymbol)}
+              {formatCurrency(currentSlips.reduce((sum, slip) =>
+                sum + Math.round((slip.baseSalary / 26) * ((slip.sickDays ?? 0) + (slip.absentDays ?? 0))) + slip.advancesDeducted, 0
+              ), settings.currencySymbol)}
             </span>
           </div>
 
           <div className="col-span-2 sm:col-span-1 border-t sm:border-t-0 sm:border-r border-slate-800 pt-2 sm:pt-0 sm:pr-3">
-            <span className="text-[11px] text-amber-300 block font-bold">صافي الأداء للدفع (Net):</span>
+            <span className="text-[11px] text-amber-300 block font-bold">إجمالي الراتب الصافي:</span>
             <span className="text-2xl font-black font-mono text-amber-400 mt-0.5 block">
               {formatCurrency(currentRun.totalNet, settings.currencySymbol)}
             </span>
@@ -319,22 +290,22 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
           <table className="w-full text-right text-xs">
             <thead className="bg-slate-900 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
               <tr>
-                <th className="p-3.5">المأجور وCIN</th>
-                <th className="p-3.5">الوظيفة والقسم</th>
-                <th className="p-3.5">الأساسي (د.م)</th>
-                <th className="p-3.5">ساعات إضافية</th>
-                <th className="p-3.5">البقشيش</th>
-                <th className="p-3.5">البدلات والأقدمية</th>
-                <th className="p-3.5">الخام (Brut)</th>
-                <th className="p-3.5">CNSS / AMO / IR</th>
-                <th className="p-3.5 text-amber-300">الصافي (Net)</th>
-                <th className="p-3.5">الحالة</th>
+                <th className="p-3.5">اسم الموظف وCIN</th>
+                <th className="p-3.5">POSTE</th>
+                <th className="p-3.5">الراتب الشهري</th>
+                <th className="p-3.5">التسبيق</th>
+                <th className="p-3.5">المرض</th>
+                <th className="p-3.5">الغياب</th>
+                <th className="p-3.5">Double Shift</th>
+                <th className="p-3.5">عمل يوم الراحة</th>
+                <th className="p-3.5 text-amber-300">الراتب الصافي</th>
                 <th className="p-3.5 text-center">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-200">
               {filteredSlips.map(slip => {
                 const stationMeta = getStationMeta(slip.station);
+                const usesCurrentFormula = slip.payrollFormulaVersion === 1;
                 return (
                   <tr key={slip.id} className="hover:bg-slate-800/50 transition-colors">
                     
@@ -354,53 +325,125 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                       </span>
                     </td>
 
-                    {/* Base Salary */}
+                    {/* Monthly salary */}
                     <td className="p-3.5 font-mono font-medium">
                       {formatCurrency(slip.baseSalary, '')}
-                    </td>
-
-                    {/* Overtime */}
-                    <td className="p-3.5 font-mono text-cyan-300">
-                      <div>{formatCurrency(slip.overtimeAmount, '')}</div>
-                      <span className="text-[10px] text-slate-400">({slip.overtimeHours} ساعة)</span>
-                    </td>
-
-                    {/* Tips */}
-                    <td className="p-3.5 font-mono text-emerald-400 font-semibold">
-                      {slip.tipsShare > 0 ? formatCurrency(slip.tipsShare, '') : '-'}
-                    </td>
-
-                    {/* Allowances & Seniority */}
-                    <td className="p-3.5 font-mono text-slate-300">
-                      {formatCurrency(slip.mealAllowance + slip.transportAllowance + slip.seniorityBonus + slip.performanceBonus, '')}
-                    </td>
-
-                    {/* Gross Salary */}
-                    <td className="p-3.5 font-mono font-bold text-slate-100">
-                      {formatCurrency(slip.totalGrossSalary, '')}
-                    </td>
-
-                    {/* Total Deductions (CNSS, AMO, IR, Acomptes) */}
-                    <td className="p-3.5 font-mono text-rose-400">
-                      <div>-{formatCurrency(slip.totalDeductions, '')}</div>
-                      <span className="text-[10px] text-slate-400">
-                        (CNSS: {slip.cnssAmount} | AMO: {slip.amoAmount})
+                      <span className="block text-[10px] text-slate-400">
+                        {usesCurrentFormula
+                          ? `اليومي: ${formatCurrency(slip.baseSalary / 26, '')}`
+                          : 'أرشيف محفوظ'}
                       </span>
                     </td>
 
-                    {/* Net To Pay */}
-                    <td className="p-3.5 font-mono font-black text-amber-300 text-sm">
-                      {formatCurrency(slip.netSalary, settings.currencySymbol)}
+                    {/* Advance */}
+                    <td className="p-3.5">
+                      {usesCurrentFormula ? <input
+                        aria-label={`التسبيق للموظف ${slip.employeeName}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        defaultValue={slip.advancesDeducted}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        onBlur={(event) => {
+                          const amount = Number(event.currentTarget.value);
+                          if (Number.isFinite(amount) && amount >= 0) {
+                            onUpdateSlip(slip.id, { advancesDeducted: amount });
+                          }
+                        }}
+                        className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-rose-300 font-mono"
+                      /> : formatCurrency(slip.advancesDeducted, '')}
                     </td>
 
-                    {/* Status */}
+                    {/* Sickness days */}
                     <td className="p-3.5">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        slip.status === 'PAID'
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                      {usesCurrentFormula ? <input
+                        aria-label={`أيام المرض للموظف ${slip.employeeName}`}
+                        type="number"
+                        min="0"
+                        step="1"
+                        defaultValue={slip.sickDays ?? 0}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        onBlur={(event) => {
+                          const days = Number(event.currentTarget.value);
+                          if (Number.isInteger(days) && days >= 0) onUpdateSlip(slip.id, { sickDays: days });
+                        }}
+                        className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-rose-300 font-mono"
+                      /> : '—'}
+                      {usesCurrentFormula && <span className="block text-[10px] text-slate-400">
+                        -{formatCurrency(Math.round((slip.baseSalary / 26) * (slip.sickDays ?? 0)), '')}
+                      </span>}
+                    </td>
+
+                    {/* Absence days */}
+                    <td className="p-3.5">
+                      {usesCurrentFormula ? <input
+                        aria-label={`أيام الغياب للموظف ${slip.employeeName}`}
+                        type="number"
+                        min="0"
+                        step="1"
+                        defaultValue={slip.absentDays ?? 0}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        onBlur={(event) => {
+                          const days = Number(event.currentTarget.value);
+                          if (Number.isInteger(days) && days >= 0) onUpdateSlip(slip.id, { absentDays: days });
+                        }}
+                        className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-rose-300 font-mono"
+                      /> : '—'}
+                      {usesCurrentFormula && <span className="block text-[10px] text-slate-400">
+                        -{formatCurrency(Math.round((slip.baseSalary / 26) * (slip.absentDays ?? 0)), '')}
+                      </span>}
+                    </td>
+
+                    {/* Double shifts */}
+                    <td className="p-3.5">
+                      {usesCurrentFormula ? <input
+                        aria-label={`عدد Double Shift للموظف ${slip.employeeName}`}
+                        type="number"
+                        min="0"
+                        step="1"
+                        defaultValue={slip.doubleShiftCount ?? 0}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        onBlur={(event) => {
+                          const count = Number(event.currentTarget.value);
+                          if (Number.isInteger(count) && count >= 0) onUpdateSlip(slip.id, { doubleShiftCount: count });
+                        }}
+                        className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-cyan-300 font-mono"
+                      /> : '—'}
+                      {usesCurrentFormula && <span className="block text-[10px] text-slate-400">
+                        +{formatCurrency(Math.round((slip.baseSalary / 26) * (slip.doubleShiftCount ?? 0)), '')}
+                      </span>}
+                    </td>
+
+                    {/* Rest day work */}
+                    <td className="p-3.5">
+                      {usesCurrentFormula ? <input
+                        aria-label={`أيام عمل الراحة للموظف ${slip.employeeName}`}
+                        type="number"
+                        min="0"
+                        step="1"
+                        defaultValue={slip.restDayWorkDays ?? 0}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        onBlur={(event) => {
+                          const days = Number(event.currentTarget.value);
+                          if (Number.isInteger(days) && days >= 0) onUpdateSlip(slip.id, { restDayWorkDays: days });
+                        }}
+                        className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-cyan-300 font-mono"
+                      /> : '—'}
+                      {usesCurrentFormula && <span className="block text-[10px] text-slate-400">
+                        +{formatCurrency(Math.round((slip.baseSalary / 26) * (slip.restDayWorkDays ?? 0)), '')}
+                      </span>}
+                    </td>
+
+                    {/* Net salary */}
+                    <td className="p-3.5 font-mono font-black text-amber-300 text-sm">
+                      {formatCurrency(slip.netSalary, settings.currencySymbol)}
+                      <span className={`block text-[10px] font-bold ${
+                        !usesCurrentFormula ? 'text-slate-400' :
+                        slip.status === 'PAID' ? 'text-emerald-400' : 'text-amber-400'
                       }`}>
-                        {slip.status === 'PAID' ? 'تم الصرف' : 'مسودة'}
+                        {!usesCurrentFormula
+                          ? 'أرشيف بالحساب السابق'
+                          : slip.status === 'PAID' ? 'تم الصرف' : 'مسودة'}
                       </span>
                     </td>
 
@@ -414,15 +457,6 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                         >
                           <Printer className="w-3.5 h-3.5" />
                           <span>ورقة الأداء</span>
-                        </button>
-
-                        <button
-                          onClick={() => openEditSlip(slip)}
-                          title="تعديل الساعات الإضافية أو المكافأة لهذا الشهر"
-                          className="px-2 py-1 rounded-md text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all flex items-center gap-1 cursor-pointer"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>تعديل</span>
                         </button>
 
                         <button
@@ -461,12 +495,12 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                     </td>
                     <td className="p-3.5 font-mono font-medium">
                       {formatCurrency(employee.baseSalary, '')}
-                    </td>
-                    <td colSpan={6} className="p-3.5 text-center text-slate-500">—</td>
-                    <td className="p-3.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-800 text-slate-300 border-slate-700">
-                        غير محتسب
+                      <span className="block text-[10px] text-slate-400">
+                        اليومي: {formatCurrency(employee.baseSalary / 26, '')}
                       </span>
+                    </td>
+                    <td colSpan={6} className="p-3.5 text-center text-slate-500">
+                      احتسب رواتب الشهر لإدخال الحالات
                     </td>
                     <td className="p-3.5 text-center">
                       {currentRun?.status !== 'PAID' ? (
@@ -487,74 +521,6 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
           </table>
         </div>
       </div>
-
-      {/* Slip Adjustment Modal */}
-      {editingSlip && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95">
-            <h3 className="text-base font-bold text-white mb-1">
-              تعديل مخصص لمسير: {editingSlip.employeeName}
-            </h3>
-            <p className="text-xs text-slate-400 mb-4">
-              تعديل مباشر لساعات العمل الإضافية أو المكافأة لشهر {selectedMonth} (بالدرهم)
-            </p>
-
-            <form onSubmit={handleSaveSlipEdit} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">الساعات الإضافية (ساعة)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={editOvertimeHours}
-                  onChange={(e) => setEditOvertimeHours(Number(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:border-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">مكافأة أداء وتميز إضافية ({settings.currencySymbol})</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="100"
-                  value={editPerformanceBonus}
-                  onChange={(e) => setEditPerformanceBonus(Number(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:border-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">خصومات أو جزاءات أو كسر صحون ({settings.currencySymbol})</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="50"
-                  value={editPenalties}
-                  onChange={(e) => setEditPenalties(Number(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:border-amber-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setEditingSlip(null)}
-                  className="px-4 py-2 rounded-xl text-slate-300 bg-slate-800 hover:bg-slate-700"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 shadow-md"
-                >
-                  حفظ وتحديث المسير
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );
