@@ -1,0 +1,6 @@
+{
+  "name": "OBAYOLI - نظام إدارة رواتب وموظفي المطاعم بالمغرب",
+  "description": "نظام أوبايولي المتكامل لإدارة الموارد البشرية (RH) والرواتب بالدرهم المغربي (MAD) وقسائم الأجور ومطابقة CNSS وAMO وICE لمطاعم ومقاهي المملكة المغربية",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

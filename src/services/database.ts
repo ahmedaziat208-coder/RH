@@ -1,0 +1,1154 @@
+import {
+  Employee,
+  AttendanceRecord,
+  AdvanceRecord,
+  BonusPenaltyRecord,
+  TipsPoolRecord,
+  PayrollSlip,
+  PayrollRun,
+  RestaurantSettings,
+} from '../types';
+import { getCurrentDateString } from '../utils/formatters';
+
+export interface DatabaseState {
+  version: number;
+  lastUpdated: string;
+  settings: RestaurantSettings;
+  employees: Employee[];
+  attendance: AttendanceRecord[];
+  advances: AdvanceRecord[];
+  adjustments: BonusPenaltyRecord[];
+  tipsPools: TipsPoolRecord[];
+  payrollRuns: PayrollRun[];
+  payrollSlips: PayrollSlip[];
+}
+
+const STORAGE_KEY = 'OBAYOLI_DATABEST_MOROCCO_V1';
+
+const DEFAULT_SETTINGS_MOROCCO: RestaurantSettings = {
+  restaurantName: 'مطعم أوبايولي فاين داينينغ (OBAYOLI)',
+  restaurantSubtitle: 'OBAYOLI Restaurant & Lounge - RH & Paie Maroc',
+  country: 'المملكة المغربية',
+  city: 'الدار البيضاء (Casablanca)',
+  iceNumber: '002849201000045', // المعرف الموحد للمقاولة ICE
+  commercialRegister: 'RC Casablanca N° 489201',
+  taxId: 'IF-39482012',
+  patenteNumber: '2849102',
+  cnssAffiliation: 'CNSS N° 8492014',
+  address: 'شارع كورنيش عين الذئاب، أنفا، الدار البيضاء',
+  phone: '+212 522 36 40 80',
+  email: 'rh@obayoli-maroc.ma',
+  currency: 'MAD',
+  currencySymbol: 'د.م',
+  defaultOvertimeRate: 1.25, // 25% إضافية نهاراً / 50% ليلاً وفق مدونة الشغل المغربية
+  defaultCnssRate: 4.48,     // نسبة CNSS للمأجور (سقف 6000 درهم)
+  defaultAmoRate: 2.26,      // التأمين الإجباري عن المرض AMO
+  defaultMealAllowance: 500, // منحة القفة والوجبة (Indemnité de Panier)
+  defaultTransportAllowance: 400, // تعويض النقل (Indemnité de Transport)
+  restaurantManager: 'هشام بنسودة (المدير العام)',
+  rhManager: 'سارة التازي (مسؤولة RH)',
+  stampNote: 'وثيقة رسمية مطابقة لمقتضيات مدونة الشغل المغربية وقوانين CNSS - مطعم أوبايولي الدار البيضاء',
+  language: 'ar',
+};
+
+const SEED_EMPLOYEES_MOROCCO: Employee[] = [
+  {
+    id: 'emp-1',
+    matricule: 'OB-001',
+    fullName: 'كريم العلمي',
+    roleTitle: 'شيف تنفيذي (Chef Exécutif)',
+    station: 'KITCHEN',
+    phone: '0661-23-45-67',
+    cin: 'BE849201',
+    cnssNumber: '109849201',
+    birthDate: '1986-04-12',
+    hireDate: '2023-01-15',
+    contractType: 'CDI',
+    salaryType: 'MONTHLY',
+    baseSalary: 16000,
+    healthCardExpiry: '2027-06-30',
+    status: 'ACTIVE',
+    ribAccount: '007 780 0001234567890123 44',
+    bankName: 'Attijariwafa Bank',
+    notes: 'مسؤول المطبخ الرئيسي وقائمة الأطعمة ومراقبة الجودة والسلامة الصحية',
+  },
+  {
+    id: 'emp-2',
+    matricule: 'OB-002',
+    fullName: 'سمير بنجلون',
+    roleTitle: 'شيف دي بارتي - مشاوي وساشيمي (Chef de Partie)',
+    station: 'KITCHEN',
+    phone: '0662-88-12-34',
+    cin: 'BK910283',
+    cnssNumber: '109124950',
+    birthDate: '1990-08-20',
+    hireDate: '2023-03-01',
+    contractType: 'CDI',
+    salaryType: 'MONTHLY',
+    baseSalary: 9000,
+    healthCardExpiry: '2026-11-15', // Expiring in ~3 weeks! Alert
+    status: 'ACTIVE',
+    ribAccount: '190 780 0009876543210987 55',
+    bankName: 'Banque Populaire',
+    notes: 'شفت مسائي - المطبخ الساخن وقسم الشواء',
+  },
+  {
+    id: 'emp-3',
+    matricule: 'OB-003',
+    fullName: 'يوسف التازي',
+    roleTitle: 'مساعد طباخ (Commis de Cuisine)',
+    station: 'KITCHEN',
+    phone: '0672-44-55-66',
+    cin: 'AA729104',
+    cnssNumber: '109782910',
+    birthDate: '1998-02-14',
+    hireDate: '2024-05-10',
+    contractType: 'CDD',
+    salaryType: 'MONTHLY',
+    baseSalary: 4800,
+    healthCardExpiry: '2027-03-10',
+    status: 'ACTIVE',
+    ribAccount: '230 780 0005556667778889 12',
+    bankName: 'CIH Bank',
+    notes: 'تحضير الخضار والصلصات والتجهيز المسبق (Mise en place)',
+  },
+  {
+    id: 'emp-4',
+    matricule: 'OB-004',
+    fullName: 'نادية بناني',
+    roleTitle: 'شيف حلويات وخبز فرنسي ومغربي (Pâtissière)',
+    station: 'KITCHEN',
+    phone: '0663-11-22-33',
+    cin: 'CD819203',
+    cnssNumber: '209384910',
+    birthDate: '1992-11-05',
+    hireDate: '2023-06-01',
+    contractType: 'CDI',
+    salaryType: 'MONTHLY',
+    baseSalary: 8200,
+    healthCardExpiry: '2027-04-18',
+    status: 'ACTIVE',
+    ribAccount: '011 780 0004443332221110 09',
+    bankName: 'BMCE Bank of Africa',
+    notes: 'قسم الحلويات الراقية والمخبوزات الصباحية',
+  },
+  {
+    id: 'emp-5',
+    matricule: 'OB-005',
+    fullName: 'أمين الفاسي',
+    roleTitle: 'كابتن صالة (Maître d’Hôtel / Chef de Rang)',
+    station: 'HALL',
+    phone: '0664-77-88-99',
+    cin: 'EE492019',
+    cnssNumber: '108920194',
+    birthDate: '1988-09-17',
+    hireDate: '2023-02-01',
+    contractType: 'CDI',
+    salaryType: 'MONTHLY',
+    baseSalary: 7500,
+    healthCardExpiry: '2027-01-20',
+    status: 'ACTIVE',
+    ribAccount: '022 780 0003332221110009 55',
+    bankName: 'Attijariwafa Bank',
+    notes: 'إشراف على طاقم الخدمة بالصالة واستقبال الضيوف وكبار الشخصيات VIP',
+  },
+  {
+    id: 'emp-6',
+    matricule: 'OB-006',
+    fullName: 'إلياس العمراني',
+    roleTitle: 'نادل صالة (Serveur de Salle)',
+    station: 'HALL',
+    phone: '0665-99-00-11',
+    cin: 'BL992837',
+    cnssNumber: '109928374',
+    birthDate: '1999-06-25',
+    hireDate: '2024-01-10',
+    contractType: 'CDD',
+    salaryType: 'MONTHLY',
+    baseSalary: 4200,
+    healthCardExpiry: '2026-10-15', // Expired recently! Alert
+    status: 'ACTIVE',
+    ribAccount: '007 780 0002221110009998 77',
+    bankName: 'Banque Populaire',
+    notes: 'خدمة الطاولات في منطقة التراس المطلة على الكورنيش',
+  },
+  {
+    id: 'emp-7',
+    matricule: 'OB-007',
+    fullName: 'مريم الشرايبي',
+    roleTitle: 'نادلة صالة واستقبال (Serveuse & Accueil)',
+    station: 'HALL',
+    phone: '0666-33-44-55',
+    cin: 'FB847291',
+    cnssNumber: '209847291',
+    birthDate: '2001-03-30',
+    hireDate: '2024-06-01',
+    contractType: 'ANAPEC', // عقد أنابيك
+    salaryType: 'MONTHLY',
+    baseSalary: 4200,
+    healthCardExpiry: '2027-05-12',
+    status: 'ACTIVE',
+    ribAccount: '230 780 0001112223334445 88',
+    bankName: 'CIH Bank',
+    notes: 'خدمة الصالة الرئيسية وقسم العائلات وعلاقات الزبائن',
+  },
+  {
+    id: 'emp-8',
+    matricule: 'OB-008',
+    fullName: 'زكريا الصقلي',
+    roleTitle: 'باريستا وخبير مشروبات (Barista & Mixologue)',
+    station: 'BAR',
+    phone: '0667-66-77-88',
+    cin: 'BH673829',
+    cnssNumber: '109673829',
+    birthDate: '1997-12-10',
+    hireDate: '2023-09-15',
+    contractType: 'CDI',
+    salaryType: 'MONTHLY',
+    baseSalary: 5500,
+    healthCardExpiry: '2027-07-22',
+    status: 'ACTIVE',
+    ribAccount: '190 780 0007778889990001 33',
+    bankName: 'Attijariwafa Bank',
+    notes: 'إعداد القهوة المختصة والشاي المغربي الأصيل والعصائر والموكتيلات',
+  },
+  {
+    id: 'emp-9',
+    matricule: 'OB-009',
+    fullName: 'سارة بلمقدم',
+    roleTitle: 'مسؤولة الصندوق (Caissière)',
+    station: 'CASHIER',
+    phone: '0668-88-99-00',
+    cin: 'BW954829',
+    cnssNumber: '209548291',
+    birthDate: '1996-04-03',
+    hireDate: '2023-04-10',
+    contractType: 'CDI',
+    salaryType: 'MONTHLY',
+    baseSalary: 5200,
+    healthCardExpiry: '2027-08-14',
+    status: 'ACTIVE',
+    ribAccount: '011 780 0006665554443332 99',
+    bankName: 'Banque Populaire',
+    notes: 'إقفال حسابات الصندوق اليومي والمبيعات ونقاط البيع الإلكترونية TPE',
+  },
+  {
+    id: 'emp-10',
+    matricule: 'OB-010',
+    fullName: 'عبد القادر السوسي',
+    roleTitle: 'مسؤول غسيل أواني ونظافة (Plongeur & Hygiène)',
+    station: 'CLEANING',
+    phone: '0669-12-34-56',
+    cin: 'JA847291',
+    cnssNumber: '108472910',
+    birthDate: '1984-07-19',
+    hireDate: '2023-01-20',
+    contractType: 'CDI',
+    salaryType: 'MONTHLY',
+    baseSalary: 3800,
+    healthCardExpiry: '2027-02-28',
+    status: 'ACTIVE',
+    ribAccount: '230 780 0009998887776665 11',
+    bankName: 'CIH Bank',
+    notes: 'تعقيم وتنظيف الأواني، معدات المطبخ، والتخلص من النفايات وفق المعايير',
+  },
+];
+
+const SEED_ATTENDANCE_MOROCCO: AttendanceRecord[] = [
+  { id: 'att-1', employeeId: 'emp-1', date: '2026-10-22', checkIn: '10:00', checkOut: '22:00', regularHours: 8, overtimeHours: 2, status: 'PRESENT', notes: 'شفت كامل مع تحضير قائمة العشاء' },
+  { id: 'att-2', employeeId: 'emp-2', date: '2026-10-22', checkIn: '14:00', checkOut: '23:30', regularHours: 8, overtimeHours: 1.5, status: 'PRESENT', notes: 'ساعة ونصف إضافية ذروة المساء' },
+  { id: 'att-3', employeeId: 'emp-3', date: '2026-10-22', checkIn: '09:00', checkOut: '17:00', regularHours: 8, overtimeHours: 0, status: 'PRESENT' },
+  { id: 'att-4', employeeId: 'emp-4', date: '2026-10-22', checkIn: '07:30', checkOut: '15:30', regularHours: 8, overtimeHours: 0, status: 'PRESENT' },
+  { id: 'att-5', employeeId: 'emp-5', date: '2026-10-22', checkIn: '11:00', checkOut: '23:00', regularHours: 8, overtimeHours: 2, status: 'PRESENT', notes: 'خدمة طاولة كبار الضيوف VIP' },
+  { id: 'att-6', employeeId: 'emp-6', date: '2026-10-22', checkIn: '12:15', checkOut: '22:00', regularHours: 7.75, overtimeHours: 0, status: 'LATE', notes: 'تأخر 15 دقيقة ازدحام الكورنيش' },
+  { id: 'att-7', employeeId: 'emp-7', date: '2026-10-22', checkIn: '12:00', checkOut: '21:00', regularHours: 8, overtimeHours: 0, status: 'PRESENT' },
+  { id: 'att-8', employeeId: 'emp-8', date: '2026-10-22', checkIn: '08:00', checkOut: '17:00', regularHours: 8, overtimeHours: 1, status: 'PRESENT' },
+  { id: 'att-9', employeeId: 'emp-9', date: '2026-10-22', checkIn: '10:30', checkOut: '22:30', regularHours: 8, overtimeHours: 2, status: 'PRESENT' },
+  { id: 'att-10', employeeId: 'emp-10', date: '2026-10-22', checkIn: '13:00', checkOut: '22:00', regularHours: 8, overtimeHours: 0, status: 'PRESENT' },
+];
+
+const SEED_ADVANCES_MOROCCO: AdvanceRecord[] = [
+  {
+    id: 'adv-1',
+    employeeId: 'emp-3', // يوسف التازي
+    amount: 1000,
+    requestDate: '2026-10-05',
+    deductionMonth: '2026-10',
+    status: 'APPROVED',
+    reason: 'تسبيق على الراتب (Acompte) لمصاريف عائلية طارئة',
+    approvedBy: 'هشام بنسودة',
+  },
+  {
+    id: 'adv-2',
+    employeeId: 'emp-6', // إلياس العمراني
+    amount: 800,
+    requestDate: '2026-10-12',
+    deductionMonth: '2026-10',
+    status: 'APPROVED',
+    reason: 'تسبيق على الراتب لمصاريف التنقل',
+    approvedBy: 'هشام بنسودة',
+  },
+  {
+    id: 'adv-3',
+    employeeId: 'emp-8', // زكريا الصقلي
+    amount: 700,
+    requestDate: '2026-10-18',
+    deductionMonth: '2026-11',
+    status: 'PENDING',
+    reason: 'طلب تسبيق يخص شهر نونبر القادم',
+  },
+];
+
+const SEED_ADJUSTMENTS_MOROCCO: BonusPenaltyRecord[] = [
+  {
+    id: 'adj-1',
+    employeeId: 'emp-1',
+    type: 'BONUS',
+    category: 'PERFORMANCE',
+    amount: 1500,
+    month: '2026-10',
+    date: '2026-10-15',
+    description: 'مكافأة نجاح قائمة المأكولات الخريفية الجديدة وزيادة التقييمات',
+  },
+  {
+    id: 'adj-2',
+    employeeId: 'emp-5',
+    type: 'BONUS',
+    category: 'PERFORMANCE',
+    amount: 800,
+    month: '2026-10',
+    date: '2026-10-16',
+    description: 'إشادة من زبائن الصالة بحسن الاستقبال والخدمة الراقية',
+  },
+  {
+    id: 'adj-3',
+    employeeId: 'emp-6',
+    type: 'PENALTY',
+    category: 'BREAKAGE',
+    amount: 150,
+    month: '2026-10',
+    date: '2026-10-08',
+    description: 'كسر صينية كؤوس كريستال أثناء تقديم المشروبات',
+  },
+  {
+    id: 'adj-4',
+    employeeId: 'emp-2',
+    type: 'BONUS',
+    category: 'MEAL_ALLOWANCE',
+    amount: 300,
+    month: '2026-10',
+    date: '2026-10-01',
+    description: 'بدل وجبة إضافية لشفتات الإغلاق المتأخرة',
+  },
+];
+
+const SEED_TIPS_POOLS_MOROCCO: TipsPoolRecord[] = [
+  {
+    id: 'tips-1',
+    title: 'صندوق بقشيش زبائن المطعم - منتصف شهر أكتوبر 2026',
+    month: '2026-10',
+    startDate: '2026-10-01',
+    endDate: '2026-10-15',
+    totalCollected: 7600, // بالدرهم المغربي
+    distributionMethod: 'ROLE_WEIGHTED',
+    isAppliedToPayroll: true,
+    notes: 'توزيع حصص البقشيش المشترك (Pourboires) على طاقم الصالة والمطبخ والبار',
+    shares: [
+      { employeeId: 'emp-1', employeeName: 'كريم العلمي', role: 'شيف تنفيذي', amount: 850 },
+      { employeeId: 'emp-2', employeeName: 'سمير بنجلون', role: 'شيف دي بارتي', amount: 750 },
+      { employeeId: 'emp-3', employeeName: 'يوسف التازي', role: 'مساعد طباخ', amount: 550 },
+      { employeeId: 'emp-4', employeeName: 'نادية بناني', role: 'شيف حلويات', amount: 650 },
+      { employeeId: 'emp-5', employeeName: 'أمين الفاسي', role: 'كابتن صالة', amount: 1100 },
+      { employeeId: 'emp-6', employeeName: 'إلياس العمراني', role: 'نادل صالة', amount: 950 },
+      { employeeId: 'emp-7', employeeName: 'مريم الشرايبي', role: 'نادلة صالة', amount: 950 },
+      { employeeId: 'emp-8', employeeName: 'زكريا الصقلي', role: 'باريستا', amount: 800 },
+      { employeeId: 'emp-9', employeeName: 'سارة بلمقدم', role: 'كاشير', amount: 550 },
+      { employeeId: 'emp-10', employeeName: 'عبد القادر السوسي', role: 'مسؤول نظافة', amount: 450 },
+    ],
+  },
+];
+
+// Helper to compute Moroccan payroll slip
+export function computeMoroccanSlipForEmployee(
+  employee: Employee,
+  month: string,
+  settings: RestaurantSettings,
+  advances: AdvanceRecord[],
+  adjustments: BonusPenaltyRecord[],
+  tipsPools: TipsPoolRecord[],
+  overtimeHoursCount: number = 0,
+  attendanceRecords: AttendanceRecord[] = []
+): PayrollSlip {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    throw new RangeError(`Invalid payroll month: ${month}`);
+  }
+
+  const [yearText, monthText] = month.split('-');
+  const payrollYear = Number(yearText);
+  const payrollMonth = Number(monthText);
+  const employeeAttendance = attendanceRecords.filter(
+    record => record.employeeId === employee.id && record.date.startsWith(month)
+  );
+  const absentDays = employeeAttendance.filter(record => record.status === 'ABSENT').length;
+  const paidAttendance = employeeAttendance.filter(
+    record => record.status === 'PRESENT' || record.status === 'LATE'
+  );
+  const recordedRegularHours = paidAttendance.reduce(
+    (sum, record) => sum + Math.max(0, record.regularHours || 0),
+    0
+  );
+  const monthlyHours = 191;
+  const standardWorkDays = 26;
+
+  let baseSalary: number;
+  let daysWorked: number;
+  let workedHours: number;
+  if (employee.salaryType === 'DAILY') {
+    daysWorked = paidAttendance.length;
+    workedHours = recordedRegularHours;
+    baseSalary = Math.round(employee.baseSalary * daysWorked);
+  } else if (employee.salaryType === 'HOURLY') {
+    daysWorked = paidAttendance.length;
+    workedHours = recordedRegularHours;
+    baseSalary = Math.round(employee.baseSalary * recordedRegularHours);
+  } else {
+    daysWorked = Math.max(0, standardWorkDays - absentDays);
+    workedHours = Math.max(0, monthlyHours - (absentDays * monthlyHours) / standardWorkDays);
+    baseSalary = Math.round(Math.max(
+      0,
+      employee.baseSalary - (absentDays * employee.baseSalary) / standardWorkDays
+    ));
+  }
+
+  const hourlyRate = employee.salaryType === 'HOURLY'
+    ? employee.baseSalary
+    : employee.salaryType === 'DAILY'
+      ? employee.baseSalary / 8
+      : employee.baseSalary / monthlyHours;
+  const overtimeRate = hourlyRate * settings.defaultOvertimeRate;
+  const overtimeAmount = Math.round(Math.max(0, overtimeHoursCount) * overtimeRate);
+
+  // Tips share for this month (البقشيش)
+  const poolTipsShare = tipsPools
+    .filter(tp => tp.month === month && tp.isAppliedToPayroll)
+    .reduce((sum, tp) => {
+      const share = tp.shares.find(s => s.employeeId === employee.id);
+      return sum + (share ? share.amount : 0);
+    }, 0);
+
+  // Seniority rates are 5%, 10%, 15%, 20%, and 25% after 2, 5, 12, 20, and 25 years.
+  const hireDate = new Date(`${employee.hireDate}T00:00:00`);
+  const monthEnd = new Date(payrollYear, payrollMonth, 0);
+  let yearsOfService = monthEnd.getFullYear() - hireDate.getFullYear();
+  if (
+    monthEnd.getMonth() < hireDate.getMonth() ||
+    (monthEnd.getMonth() === hireDate.getMonth() && monthEnd.getDate() < hireDate.getDate())
+  ) {
+    yearsOfService -= 1;
+  }
+  let seniorityRate = 0;
+  if (yearsOfService >= 25) seniorityRate = 0.25;
+  else if (yearsOfService >= 20) seniorityRate = 0.20;
+  else if (yearsOfService >= 12) seniorityRate = 0.15;
+  else if (yearsOfService >= 5) seniorityRate = 0.10;
+  else if (yearsOfService >= 2) seniorityRate = 0.05;
+  // Bonuses & allowances
+  const employeeAdjustments = adjustments.filter(
+    adj => adj.employeeId === employee.id && adj.month === month
+  );
+  const manualSeniorityBonus = employeeAdjustments
+    .filter(adj => adj.type === 'BONUS' && adj.category === 'SENIORITY')
+    .reduce((sum, adj) => sum + adj.amount, 0);
+  const seniorityBonus = Math.round(baseSalary * seniorityRate) + manualSeniorityBonus;
+
+  const performanceBonus = employeeAdjustments
+    .filter(adj => adj.type === 'BONUS' && adj.category === 'PERFORMANCE')
+    .reduce((sum, adj) => sum + adj.amount, 0);
+
+  const extraMeal = employeeAdjustments
+    .filter(adj => adj.type === 'BONUS' && adj.category === 'MEAL_ALLOWANCE')
+    .reduce((sum, adj) => sum + adj.amount, 0);
+  const earnedDaysRatio = Math.min(1, daysWorked / standardWorkDays);
+  const mealAllowance = Math.round(settings.defaultMealAllowance * earnedDaysRatio) + extraMeal;
+
+  const extraTransport = employeeAdjustments
+    .filter(adj => adj.type === 'BONUS' && adj.category === 'TRANSPORT_ALLOWANCE')
+    .reduce((sum, adj) => sum + adj.amount, 0);
+  const transportAllowance = Math.round(settings.defaultTransportAllowance * earnedDaysRatio) + extraTransport;
+  const tipsShare =
+    poolTipsShare +
+    employeeAdjustments
+      .filter(adj => adj.type === 'BONUS' && adj.category === 'TIPS_SHARE')
+      .reduce((sum, adj) => sum + adj.amount, 0);
+
+  // Gross Salary Brut Global
+  const totalGrossSalary =
+    baseSalary +
+    overtimeAmount +
+    tipsShare +
+    seniorityBonus +
+    mealAllowance +
+    transportAllowance +
+    performanceBonus;
+
+  const cnssRate = settings.defaultCnssRate;
+  const amoRate = settings.defaultAmoRate;
+
+  // Advances deducted this month (Acomptes)
+  const advancesDeducted = advances
+    .filter(adv => adv.employeeId === employee.id && adv.deductionMonth === month && adv.status === 'APPROVED')
+    .reduce((sum, adv) => sum + adv.amount, 0);
+
+  // Penalties (كسر صحون، تأخيرات)
+  const penaltiesDeducted = employeeAdjustments
+    .filter(adj => adj.type === 'PENALTY')
+    .reduce((sum, adj) => sum + adj.amount, 0);
+
+  const slip: PayrollSlip = {
+    id: `slip-${month}-${employee.id}`,
+    payrollRunId: `run-${month}`,
+    employeeId: employee.id,
+    employeeName: employee.fullName,
+    employeeMatricule: employee.matricule,
+    cin: employee.cin,
+    cnssNumber: employee.cnssNumber,
+    roleTitle: employee.roleTitle,
+    station: employee.station,
+    contractType: employee.contractType,
+    salaryType: employee.salaryType,
+    month,
+    baseSalary,
+    daysWorked,
+    workedHours,
+    overtimeHours: overtimeHoursCount,
+    overtimeRate,
+    overtimeAmount,
+    tipsShare,
+    seniorityBonus,
+    mealAllowance,
+    transportAllowance,
+    performanceBonus,
+    totalGrossSalary,
+    cnssRate,
+    cnssAmount: 0,
+    amoRate,
+    amoAmount: 0,
+    irAmount: 0,
+    advancesDeducted,
+    penaltiesDeducted,
+    totalDeductions: 0,
+    netSalary: 0,
+    status: 'DRAFT',
+    paymentMethod: 'BANK_TRANSFER',
+  };
+  return recalculateSlipAmounts(slip, settings);
+}
+
+function calculateAnnualIncomeTax(annualTaxableIncome: number): number {
+  const brackets = [
+    { ceiling: 40_000, rate: 0 },
+    { ceiling: 60_000, rate: 0.10 },
+    { ceiling: 80_000, rate: 0.20 },
+    { ceiling: 100_000, rate: 0.30 },
+    { ceiling: 180_000, rate: 0.34 },
+    { ceiling: Number.POSITIVE_INFINITY, rate: 0.37 },
+  ];
+
+  let tax = 0;
+  let lowerBound = 0;
+  for (const bracket of brackets) {
+    const taxableInBracket = Math.max(
+      0,
+      Math.min(annualTaxableIncome, bracket.ceiling) - lowerBound
+    );
+    tax += taxableInBracket * bracket.rate;
+    if (annualTaxableIncome <= bracket.ceiling) break;
+    lowerBound = bracket.ceiling;
+  }
+  return tax;
+}
+
+function recalculateSlipAmounts(
+  slip: PayrollSlip,
+  settings: RestaurantSettings
+): PayrollSlip {
+  const totalGrossSalary =
+    slip.baseSalary +
+    slip.overtimeAmount +
+    slip.tipsShare +
+    slip.seniorityBonus +
+    slip.mealAllowance +
+    slip.transportAllowance +
+    slip.performanceBonus;
+  const taxableGross = Math.max(0, totalGrossSalary - slip.mealAllowance - slip.transportAllowance);
+  const cnssBase = Math.min(6000, taxableGross);
+  const cnssAmount = Math.round(cnssBase * (settings.defaultCnssRate / 100));
+  const amoAmount = Math.round(taxableGross * (settings.defaultAmoRate / 100));
+  const professionalExpenses = Math.min(2500, taxableGross * 0.20);
+  const monthlyTaxableIncome = Math.max(
+    0,
+    taxableGross - professionalExpenses - cnssAmount - amoAmount
+  );
+  const irAmount = Math.round(calculateAnnualIncomeTax(monthlyTaxableIncome * 12) / 12);
+  const totalDeductions =
+    cnssAmount + amoAmount + irAmount + slip.advancesDeducted + slip.penaltiesDeducted;
+
+  return {
+    ...slip,
+    totalGrossSalary,
+    cnssAmount,
+    amoAmount,
+    irAmount,
+    totalDeductions,
+    netSalary: Math.max(0, totalGrossSalary - totalDeductions),
+  };
+}
+
+function createInitialMoroccanDatabaseState(): DatabaseState {
+  const currentMonth = '2026-10';
+  const prevMonth = '2026-09';
+  const settings = DEFAULT_SETTINGS_MOROCCO;
+
+  // Slips for 2026-10
+  const currentSlips = SEED_EMPLOYEES_MOROCCO.map(emp => {
+    return computeMoroccanSlipForEmployee(
+      emp,
+      currentMonth,
+      settings,
+      SEED_ADVANCES_MOROCCO,
+      SEED_ADJUSTMENTS_MOROCCO,
+      SEED_TIPS_POOLS_MOROCCO,
+      SEED_ATTENDANCE_MOROCCO
+        .filter(record => record.employeeId === emp.id && record.date.startsWith(currentMonth))
+        .reduce((sum, record) => sum + record.overtimeHours, 0),
+      SEED_ATTENDANCE_MOROCCO
+    );
+  });
+
+  const totalGrossCurrent = currentSlips.reduce((acc, s) => acc + s.totalGrossSalary, 0);
+  const totalNetCurrent = currentSlips.reduce((acc, s) => acc + s.netSalary, 0);
+  const totalOvertimeCurrent = currentSlips.reduce((acc, s) => acc + s.overtimeAmount, 0);
+  const totalTipsCurrent = currentSlips.reduce((acc, s) => acc + s.tipsShare, 0);
+  const totalDeductionsCurrent = currentSlips.reduce((acc, s) => acc + s.totalDeductions, 0);
+
+  const runCurrent: PayrollRun = {
+    id: `run-${currentMonth}`,
+    month: currentMonth,
+    year: 2026,
+    monthNumber: 10,
+    generatedDate: '2026-10-22',
+    totalEmployees: currentSlips.length,
+    totalGross: totalGrossCurrent,
+    totalNet: totalNetCurrent,
+    totalOvertimeAmount: totalOvertimeCurrent,
+    totalTipsDistributed: totalTipsCurrent,
+    totalDeductions: totalDeductionsCurrent,
+    status: 'DRAFT',
+    notes: 'مسير رواتب شهر أكتوبر 2026 بالمغرب - في طور المراجعة والاعتماد',
+  };
+
+  // Previous month 2026-09
+  const prevSlips = SEED_EMPLOYEES_MOROCCO.map(emp => {
+    const slip = computeMoroccanSlipForEmployee(
+      emp,
+      prevMonth,
+      settings,
+      [],
+      [],
+      [],
+      0
+    );
+    slip.id = `slip-${prevMonth}-${emp.id}`;
+    slip.payrollRunId = `run-${prevMonth}`;
+    slip.month = prevMonth;
+    slip.status = 'PAID';
+    slip.paymentDate = '2026-09-30';
+    slip.paymentMethod = 'BANK_TRANSFER';
+    slip.paymentReference = `VIR-MA-${emp.cin}`;
+    return slip;
+  });
+
+  const runPrev: PayrollRun = {
+    id: `run-${prevMonth}`,
+    month: prevMonth,
+    year: 2026,
+    monthNumber: 9,
+    generatedDate: '2026-09-30',
+    totalEmployees: prevSlips.length,
+    totalGross: prevSlips.reduce((acc, s) => acc + s.totalGrossSalary, 0),
+    totalNet: prevSlips.reduce((acc, s) => acc + s.netSalary, 0),
+    totalOvertimeAmount: prevSlips.reduce((acc, s) => acc + s.overtimeAmount, 0),
+    totalTipsDistributed: 0,
+    totalDeductions: prevSlips.reduce((acc, s) => acc + s.totalDeductions, 0),
+    status: 'PAID',
+    notes: 'مسير رواتب شهر شتنبر 2026 - تم الصرف لجميع العاملين عبر التحويل البنكي',
+  };
+
+  return {
+    version: 3,
+    lastUpdated: new Date().toISOString(),
+    settings,
+    employees: SEED_EMPLOYEES_MOROCCO,
+    attendance: SEED_ATTENDANCE_MOROCCO,
+    advances: SEED_ADVANCES_MOROCCO,
+    adjustments: SEED_ADJUSTMENTS_MOROCCO,
+    tipsPools: SEED_TIPS_POOLS_MOROCCO,
+    payrollRuns: [runCurrent, runPrev],
+    payrollSlips: [...currentSlips, ...prevSlips],
+  };
+}
+
+function migratePayrollCalculations(state: DatabaseState): DatabaseState {
+  for (const run of state.payrollRuns) {
+    if (run.status === 'PAID') continue;
+
+    const slips = state.employees
+      .filter(employee => employee.status !== 'TERMINATED')
+      .map(employee => {
+        const attendance = state.attendance.filter(
+          record => record.employeeId === employee.id && record.date.startsWith(run.month)
+        );
+        const overtimeHours = attendance.reduce(
+          (sum, record) => sum + Math.max(0, record.overtimeHours || 0),
+          0
+        );
+        return computeMoroccanSlipForEmployee(
+          employee,
+          run.month,
+          state.settings,
+          state.advances,
+          state.adjustments,
+          state.tipsPools,
+          overtimeHours,
+          attendance
+        );
+      });
+
+    state.payrollSlips = [
+      ...state.payrollSlips.filter(slip => slip.month !== run.month),
+      ...slips,
+    ];
+    run.totalEmployees = slips.length;
+    run.totalGross = slips.reduce((sum, slip) => sum + slip.totalGrossSalary, 0);
+    run.totalNet = slips.reduce((sum, slip) => sum + slip.netSalary, 0);
+    run.totalOvertimeAmount = slips.reduce((sum, slip) => sum + slip.overtimeAmount, 0);
+    run.totalTipsDistributed = slips.reduce((sum, slip) => sum + slip.tipsShare, 0);
+    run.totalDeductions = slips.reduce((sum, slip) => sum + slip.totalDeductions, 0);
+    run.status = 'DRAFT';
+  }
+  state.version = 3;
+  return state;
+}
+
+class DatabaseManager {
+  private state: DatabaseState;
+  private listeners: Set<() => void> = new Set();
+
+  constructor() {
+    this.state = this.loadFromStorage();
+  }
+
+  private loadFromStorage(): DatabaseState {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (
+          parsed &&
+          typeof parsed === 'object' &&
+          'version' in parsed &&
+          (parsed.version === 2 || parsed.version === 3) &&
+          'employees' in parsed &&
+          Array.isArray(parsed.employees) &&
+          'settings' in parsed &&
+          'attendance' in parsed &&
+          Array.isArray(parsed.attendance) &&
+          'advances' in parsed &&
+          Array.isArray(parsed.advances) &&
+          'adjustments' in parsed &&
+          Array.isArray(parsed.adjustments) &&
+          'tipsPools' in parsed &&
+          Array.isArray(parsed.tipsPools) &&
+          'payrollRuns' in parsed &&
+          Array.isArray(parsed.payrollRuns) &&
+          'payrollSlips' in parsed &&
+          Array.isArray(parsed.payrollSlips)
+        ) {
+          const state = parsed as DatabaseState;
+          if (state.version === 2) {
+            const migrated = migratePayrollCalculations(state);
+            this.saveToStorage(migrated);
+            return migrated;
+          }
+          return state;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse storage, initializing fresh Moroccan DATABEST state:', e);
+    }
+    const fresh = createInitialMoroccanDatabaseState();
+    this.saveToStorage(fresh);
+    return fresh;
+  }
+
+  private saveToStorage(state: DatabaseState): void {
+    try {
+      state.lastUpdated = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.error('Failed to save to localStorage:', e);
+    }
+  }
+
+  public subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notify(): void {
+    this.saveToStorage(this.state);
+    this.listeners.forEach(fn => fn());
+  }
+
+  // Getters
+  public getState(): DatabaseState {
+    return this.state;
+  }
+
+  public getSettings(): RestaurantSettings {
+    return this.state.settings;
+  }
+
+  public getEmployees(): Employee[] {
+    return this.state.employees;
+  }
+
+  public getEmployeeById(id: string): Employee | undefined {
+    return this.state.employees.find(e => e.id === id);
+  }
+
+  public getAttendance(): AttendanceRecord[] {
+    return this.state.attendance;
+  }
+
+  public getAdvances(): AdvanceRecord[] {
+    return this.state.advances;
+  }
+
+  public getAdjustments(): BonusPenaltyRecord[] {
+    return this.state.adjustments;
+  }
+
+  public getTipsPools(): TipsPoolRecord[] {
+    return this.state.tipsPools;
+  }
+
+  public getPayrollRuns(): PayrollRun[] {
+    return this.state.payrollRuns;
+  }
+
+  public getPayrollSlips(month?: string): PayrollSlip[] {
+    if (month) {
+      return this.state.payrollSlips.filter(s => s.month === month);
+    }
+    return this.state.payrollSlips;
+  }
+
+  // Mutations - Settings
+  public updateSettings(settings: RestaurantSettings): void {
+    this.state.settings = settings;
+    this.notify();
+  }
+
+  // Mutations - Employees
+  public addEmployee(employee: Omit<Employee, 'id'>): Employee {
+    const id = `emp-${Date.now()}`;
+    const newEmp: Employee = { ...employee, id };
+    this.state.employees.unshift(newEmp);
+    this.notify();
+    return newEmp;
+  }
+
+  public updateEmployee(id: string, updates: Partial<Employee>): void {
+    this.state.employees = this.state.employees.map(e =>
+      e.id === id ? { ...e, ...updates } : e
+    );
+    this.notify();
+  }
+
+  public deleteEmployee(id: string): void {
+    this.state.employees = this.state.employees.filter(e => e.id !== id);
+    this.notify();
+  }
+
+  // Mutations - Attendance
+  public recordAttendance(record: Omit<AttendanceRecord, 'id'>): AttendanceRecord {
+    const existingIndex = this.state.attendance.findIndex(
+      a => a.employeeId === record.employeeId && a.date === record.date
+    );
+    const id = existingIndex >= 0 ? this.state.attendance[existingIndex].id : `att-${Date.now()}`;
+    const saved: AttendanceRecord = { ...record, id };
+
+    if (existingIndex >= 0) {
+      this.state.attendance[existingIndex] = saved;
+    } else {
+      this.state.attendance.unshift(saved);
+    }
+    this.notify();
+    return saved;
+  }
+
+  public deleteAttendance(id: string): void {
+    this.state.attendance = this.state.attendance.filter(a => a.id !== id);
+    this.notify();
+  }
+
+  // Mutations - Advances
+  public addAdvance(advance: Omit<AdvanceRecord, 'id'>): AdvanceRecord {
+    const newAdv: AdvanceRecord = { ...advance, id: `adv-${Date.now()}` };
+    this.state.advances.unshift(newAdv);
+    this.notify();
+    return newAdv;
+  }
+
+  public updateAdvance(id: string, updates: Partial<AdvanceRecord>): void {
+    this.state.advances = this.state.advances.map(a =>
+      a.id === id ? { ...a, ...updates } : a
+    );
+    this.notify();
+  }
+
+  public updateAdvanceStatus(id: string, status: AdvanceRecord['status']): void {
+    this.state.advances = this.state.advances.map(a =>
+      a.id === id ? { ...a, status } : a
+    );
+    this.notify();
+  }
+
+  public deleteAdvance(id: string): void {
+    this.state.advances = this.state.advances.filter(a => a.id !== id);
+    this.notify();
+  }
+
+  // Mutations - Adjustments
+  public addAdjustment(record: Omit<BonusPenaltyRecord, 'id'>): BonusPenaltyRecord {
+    const newRecord: BonusPenaltyRecord = { ...record, id: `adj-${Date.now()}` };
+    this.state.adjustments.unshift(newRecord);
+    this.notify();
+    return newRecord;
+  }
+
+  public updateAdjustment(id: string, updates: Partial<BonusPenaltyRecord>): void {
+    this.state.adjustments = this.state.adjustments.map(a =>
+      a.id === id ? { ...a, ...updates } : a
+    );
+    this.notify();
+  }
+
+  public deleteAdjustment(id: string): void {
+    this.state.adjustments = this.state.adjustments.filter(a => a.id !== id);
+    this.notify();
+  }
+
+  // Mutations - Tips Pool
+  public addTipsPool(pool: Omit<TipsPoolRecord, 'id'>): TipsPoolRecord {
+    const newPool: TipsPoolRecord = { ...pool, id: `tips-${Date.now()}` };
+    this.state.tipsPools.unshift(newPool);
+    this.notify();
+    return newPool;
+  }
+
+  public updateTipsPool(id: string, updates: Partial<TipsPoolRecord>): void {
+    this.state.tipsPools = this.state.tipsPools.map(t =>
+      t.id === id ? { ...t, ...updates } : t
+    );
+    this.notify();
+  }
+
+  public deleteTipsPool(id: string): void {
+    this.state.tipsPools = this.state.tipsPools.filter(t => t.id !== id);
+    this.notify();
+  }
+
+  public deletePayrollSlip(id: string): void {
+    const target = this.state.payrollSlips.find(s => s.id === id);
+    this.state.payrollSlips = this.state.payrollSlips.filter(s => s.id !== id);
+    if (target) {
+      const remaining = this.state.payrollSlips.filter(s => s.month === target.month);
+      const runIndex = this.state.payrollRuns.findIndex(r => r.month === target.month);
+      if (runIndex >= 0) {
+        this.state.payrollRuns[runIndex].totalEmployees = remaining.length;
+        this.state.payrollRuns[runIndex].totalGross = remaining.reduce((sum, s) => sum + s.totalGrossSalary, 0);
+        this.state.payrollRuns[runIndex].totalNet = remaining.reduce((sum, s) => sum + s.netSalary, 0);
+        this.state.payrollRuns[runIndex].totalOvertimeAmount = remaining.reduce((sum, s) => sum + s.overtimeAmount, 0);
+        this.state.payrollRuns[runIndex].totalTipsDistributed = remaining.reduce((sum, s) => sum + s.tipsShare, 0);
+        this.state.payrollRuns[runIndex].totalDeductions = remaining.reduce((sum, s) => sum + s.totalDeductions, 0);
+      }
+    }
+    this.notify();
+  }
+
+  public deletePayrollRun(month: string): void {
+    this.state.payrollRuns = this.state.payrollRuns.filter(r => r.month !== month);
+    this.state.payrollSlips = this.state.payrollSlips.filter(s => s.month !== month);
+    this.notify();
+  }
+
+  // Mutations - Payroll Runs & Slips
+  public generateOrRecalculatePayroll(month: string): PayrollRun {
+    const existingRunIndex = this.state.payrollRuns.findIndex(r => r.month === month);
+    if (existingRunIndex >= 0 && this.state.payrollRuns[existingRunIndex].status === 'PAID') {
+      throw new Error(`Cannot recalculate a paid payroll run: ${month}`);
+    }
+    const [yearStr, monthStr] = month.split('-');
+    const year = parseInt(yearStr, 10);
+    const monthNum = parseInt(monthStr, 10);
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      throw new RangeError(`Invalid payroll month: ${month}`);
+    }
+
+    // Remove old slips for this month
+    this.state.payrollSlips = this.state.payrollSlips.filter(s => s.month !== month);
+
+    const activeEmployees = this.state.employees.filter(e => e.status !== 'TERMINATED');
+    const newSlips: PayrollSlip[] = activeEmployees.map(emp => {
+      const employeeAtt = this.state.attendance.filter(
+        a => a.employeeId === emp.id && a.date.startsWith(month)
+      );
+      const totalOvertime = employeeAtt.reduce((sum, a) => sum + (a.overtimeHours || 0), 0);
+
+      return computeMoroccanSlipForEmployee(
+        emp,
+        month,
+        this.state.settings,
+        this.state.advances,
+        this.state.adjustments,
+        this.state.tipsPools,
+        totalOvertime,
+        employeeAtt
+      );
+    });
+
+    this.state.payrollSlips.push(...newSlips);
+
+    const totalGross = newSlips.reduce((acc, s) => acc + s.totalGrossSalary, 0);
+    const totalNet = newSlips.reduce((acc, s) => acc + s.netSalary, 0);
+    const totalOvertime = newSlips.reduce((acc, s) => acc + s.overtimeAmount, 0);
+    const totalTips = newSlips.reduce((acc, s) => acc + s.tipsShare, 0);
+    const totalDeductions = newSlips.reduce((acc, s) => acc + s.totalDeductions, 0);
+
+    const run: PayrollRun = {
+      id: `run-${month}`,
+      month,
+      year,
+      monthNumber: monthNum,
+      generatedDate: getCurrentDateString(),
+      totalEmployees: newSlips.length,
+      totalGross,
+      totalNet,
+      totalOvertimeAmount: totalOvertime,
+      totalTipsDistributed: totalTips,
+      totalDeductions,
+      status: 'DRAFT',
+      notes: `مسير رواتب شهر ${month} بالمغرب - تم التوليد بنجاح لـ ${newSlips.length} موظف`,
+    };
+
+    if (existingRunIndex >= 0) {
+      this.state.payrollRuns[existingRunIndex] = run;
+    } else {
+      this.state.payrollRuns.unshift(run);
+    }
+
+    this.notify();
+    return run;
+  }
+
+  public updatePayrollSlip(id: string, updates: Partial<PayrollSlip>): void {
+    this.state.payrollSlips = this.state.payrollSlips.map(s => {
+      if (s.id === id) {
+        return recalculateSlipAmounts({ ...s, ...updates }, this.state.settings);
+      }
+      return s;
+    });
+
+    const targetSlip = this.state.payrollSlips.find(s => s.id === id);
+    if (targetSlip) {
+      const monthSlips = this.state.payrollSlips.filter(s => s.month === targetSlip.month);
+      const runIndex = this.state.payrollRuns.findIndex(r => r.month === targetSlip.month);
+      if (runIndex >= 0) {
+        this.state.payrollRuns[runIndex].totalGross = monthSlips.reduce((sum, s) => sum + s.totalGrossSalary, 0);
+        this.state.payrollRuns[runIndex].totalNet = monthSlips.reduce((sum, s) => sum + s.netSalary, 0);
+        this.state.payrollRuns[runIndex].totalOvertimeAmount = monthSlips.reduce((sum, s) => sum + s.overtimeAmount, 0);
+        this.state.payrollRuns[runIndex].totalTipsDistributed = monthSlips.reduce((sum, s) => sum + s.tipsShare, 0);
+        this.state.payrollRuns[runIndex].totalDeductions = monthSlips.reduce((sum, s) => sum + s.totalDeductions, 0);
+      }
+    }
+
+    this.notify();
+  }
+
+  public updatePayrollRunStatus(month: string, status: PayrollRun['status']): void {
+    const run = this.state.payrollRuns.find(r => r.month === month);
+    if (run) {
+      run.status = status;
+      this.state.payrollSlips = this.state.payrollSlips.map(s => {
+        if (s.month === month) {
+          return {
+            ...s,
+            status,
+            paymentDate: status === 'PAID' ? getCurrentDateString() : s.paymentDate,
+          };
+        }
+        return s;
+      });
+
+      if (status === 'PAID') {
+        this.state.advances = this.state.advances.map(a => {
+          if (a.deductionMonth === month && a.status === 'APPROVED') {
+            return { ...a, status: 'DEDUCTED' };
+          }
+          return a;
+        });
+      }
+
+      this.notify();
+    }
+  }
+
+  // Backup & Restore
+  public exportBackupJson(): string {
+    return JSON.stringify(this.state, null, 2);
+  }
+
+  public importBackupJson(jsonString: string): { success: boolean; message: string } {
+    try {
+      const parsed = JSON.parse(jsonString) as DatabaseState;
+      if (
+        !parsed ||
+        (parsed.version !== 2 && parsed.version !== 3) ||
+        !parsed.settings ||
+        !Array.isArray(parsed.employees) ||
+        !Array.isArray(parsed.attendance) ||
+        !Array.isArray(parsed.advances) ||
+        !Array.isArray(parsed.adjustments) ||
+        !Array.isArray(parsed.tipsPools) ||
+        !Array.isArray(parsed.payrollRuns) ||
+        !Array.isArray(parsed.payrollSlips)
+      ) {
+        return { success: false, message: 'ملف النسخة الاحتياطية غير صالح أو ناقص البنية' };
+      }
+      this.state = parsed.version === 2 ? migratePayrollCalculations(parsed) : parsed;
+      this.notify();
+      return { success: true, message: 'تم استعادة قاعدة بيانات DATABEST بنجاح' };
+    } catch (e) {
+      return { success: false, message: 'خطأ في قراءة ملف JSON' };
+    }
+  }
+
+  public resetToDefaultSeed(): void {
+    this.state = createInitialMoroccanDatabaseState();
+    this.notify();
+  }
+}
+
+export const databest = new DatabaseManager();
