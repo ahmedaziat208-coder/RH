@@ -368,6 +368,16 @@ const SEED_TIPS_POOLS_MOROCCO: TipsPoolRecord[] = [
   },
 ];
 
+const DEMO_EMPLOYEE_IDS = new Set([
+  'emp-1', 'emp-2', 'emp-3', 'emp-4', 'emp-5', 'emp-6', 'emp-7', 'emp-8', 'emp-9', 'emp-10',
+]);
+const DEMO_ATTENDANCE_IDS = new Set([
+  'att-1', 'att-2', 'att-3', 'att-4', 'att-5', 'att-6', 'att-7', 'att-8', 'att-9', 'att-10',
+]);
+const DEMO_ADVANCE_IDS = new Set(['adv-1', 'adv-2', 'adv-3']);
+const DEMO_ADJUSTMENT_IDS = new Set(['adj-1', 'adj-2', 'adj-3', 'adj-4']);
+const DEMO_TIPS_POOL_IDS = new Set(['tips-1']);
+
 // Helper to compute Moroccan payroll slip
 export function computeMoroccanSlipForEmployee(
   employee: Employee,
@@ -488,96 +498,17 @@ function recalculateSlipAmounts(
 }
 
 function createInitialMoroccanDatabaseState(): DatabaseState {
-  const currentMonth = '2026-10';
-  const prevMonth = '2026-09';
-  const settings = DEFAULT_SETTINGS_MOROCCO;
-
-  // Slips for 2026-10
-  const currentSlips = SEED_EMPLOYEES_MOROCCO.map(emp => {
-    return computeMoroccanSlipForEmployee(
-      emp,
-      currentMonth,
-      settings,
-      SEED_ADVANCES_MOROCCO,
-      SEED_ADJUSTMENTS_MOROCCO,
-      SEED_TIPS_POOLS_MOROCCO,
-      SEED_ATTENDANCE_MOROCCO
-        .filter(record => record.employeeId === emp.id && record.date.startsWith(currentMonth))
-        .reduce((sum, record) => sum + record.overtimeHours, 0),
-      SEED_ATTENDANCE_MOROCCO
-    );
-  });
-
-  const totalGrossCurrent = currentSlips.reduce((acc, s) => acc + s.totalGrossSalary, 0);
-  const totalNetCurrent = currentSlips.reduce((acc, s) => acc + s.netSalary, 0);
-  const totalOvertimeCurrent = currentSlips.reduce((acc, s) => acc + s.overtimeAmount, 0);
-  const totalTipsCurrent = currentSlips.reduce((acc, s) => acc + s.tipsShare, 0);
-  const totalDeductionsCurrent = currentSlips.reduce((acc, s) => acc + s.totalDeductions, 0);
-
-  const runCurrent: PayrollRun = {
-    id: `run-${currentMonth}`,
-    month: currentMonth,
-    year: 2026,
-    monthNumber: 10,
-    generatedDate: '2026-10-22',
-    totalEmployees: currentSlips.length,
-    totalGross: totalGrossCurrent,
-    totalNet: totalNetCurrent,
-    totalOvertimeAmount: totalOvertimeCurrent,
-    totalTipsDistributed: totalTipsCurrent,
-    totalDeductions: totalDeductionsCurrent,
-    status: 'DRAFT',
-    notes: 'مسير رواتب شهر أكتوبر 2026 بالمغرب - في طور المراجعة والاعتماد',
-  };
-
-  // Previous month 2026-09
-  const prevSlips = SEED_EMPLOYEES_MOROCCO.map(emp => {
-    const slip = computeMoroccanSlipForEmployee(
-      emp,
-      prevMonth,
-      settings,
-      [],
-      [],
-      [],
-      0
-    );
-    slip.id = `slip-${prevMonth}-${emp.id}`;
-    slip.payrollRunId = `run-${prevMonth}`;
-    slip.month = prevMonth;
-    slip.status = 'PAID';
-    slip.paymentDate = '2026-09-30';
-    slip.paymentMethod = 'BANK_TRANSFER';
-    slip.paymentReference = `VIR-MA-${emp.cin}`;
-    return slip;
-  });
-
-  const runPrev: PayrollRun = {
-    id: `run-${prevMonth}`,
-    month: prevMonth,
-    year: 2026,
-    monthNumber: 9,
-    generatedDate: '2026-09-30',
-    totalEmployees: prevSlips.length,
-    totalGross: prevSlips.reduce((acc, s) => acc + s.totalGrossSalary, 0),
-    totalNet: prevSlips.reduce((acc, s) => acc + s.netSalary, 0),
-    totalOvertimeAmount: prevSlips.reduce((acc, s) => acc + s.overtimeAmount, 0),
-    totalTipsDistributed: 0,
-    totalDeductions: prevSlips.reduce((acc, s) => acc + s.totalDeductions, 0),
-    status: 'PAID',
-    notes: 'مسير رواتب شهر شتنبر 2026 - تم الصرف لجميع العاملين عبر التحويل البنكي',
-  };
-
   return {
-    version: 5,
+    version: 6,
     lastUpdated: new Date().toISOString(),
-    settings,
-    employees: SEED_EMPLOYEES_MOROCCO,
-    attendance: SEED_ATTENDANCE_MOROCCO,
-    advances: SEED_ADVANCES_MOROCCO,
-    adjustments: SEED_ADJUSTMENTS_MOROCCO,
-    tipsPools: SEED_TIPS_POOLS_MOROCCO,
-    payrollRuns: [runCurrent, runPrev],
-    payrollSlips: [...currentSlips, ...prevSlips],
+    settings: DEFAULT_SETTINGS_MOROCCO,
+    employees: [],
+    attendance: [],
+    advances: [],
+    adjustments: [],
+    tipsPools: [],
+    payrollRuns: [],
+    payrollSlips: [],
   };
 }
 
@@ -641,6 +572,53 @@ function migratePayrollCalculations(state: DatabaseState): DatabaseState {
   return state;
 }
 
+function removeDemoData(state: DatabaseState): DatabaseState {
+  const removedDemoSlips = state.payrollSlips.filter(slip => DEMO_EMPLOYEE_IDS.has(slip.employeeId));
+  const removedRunIds = new Set(removedDemoSlips.map(slip => slip.payrollRunId));
+
+  state.employees = state.employees.filter(employee => !DEMO_EMPLOYEE_IDS.has(employee.id));
+  state.attendance = state.attendance.filter(
+    record => !DEMO_EMPLOYEE_IDS.has(record.employeeId) && !DEMO_ATTENDANCE_IDS.has(record.id)
+  );
+  state.advances = state.advances.filter(
+    record => !DEMO_EMPLOYEE_IDS.has(record.employeeId) && !DEMO_ADVANCE_IDS.has(record.id)
+  );
+  state.adjustments = state.adjustments.filter(
+    record => !DEMO_EMPLOYEE_IDS.has(record.employeeId) && !DEMO_ADJUSTMENT_IDS.has(record.id)
+  );
+  state.tipsPools = state.tipsPools
+    .filter(pool => !DEMO_TIPS_POOL_IDS.has(pool.id))
+    .map(pool => ({
+      ...pool,
+      shares: pool.shares.filter(share => !DEMO_EMPLOYEE_IDS.has(share.employeeId)),
+    }));
+  state.payrollSlips = state.payrollSlips.filter(slip => !DEMO_EMPLOYEE_IDS.has(slip.employeeId));
+
+  state.payrollRuns = state.payrollRuns
+    .filter(run => {
+      const isEmptyDemoRun =
+        (run.id === 'run-2026-09' && run.generatedDate === '2026-09-30') ||
+        (run.id === 'run-2026-10' && run.generatedDate === '2026-10-22');
+      return !isEmptyDemoRun || state.payrollSlips.some(slip => slip.payrollRunId === run.id);
+    })
+    .map(run => {
+      if (!removedRunIds.has(run.id)) return run;
+      const slips = state.payrollSlips.filter(slip => slip.payrollRunId === run.id);
+      return {
+        ...run,
+        totalEmployees: slips.length,
+        totalGross: slips.reduce((sum, slip) => sum + slip.totalGrossSalary, 0),
+        totalNet: slips.reduce((sum, slip) => sum + slip.netSalary, 0),
+        totalOvertimeAmount: slips.reduce((sum, slip) => sum + slip.overtimeAmount, 0),
+        totalTipsDistributed: slips.reduce((sum, slip) => sum + slip.tipsShare, 0),
+        totalDeductions: slips.reduce((sum, slip) => sum + slip.totalDeductions, 0),
+      };
+    });
+
+  state.version = 6;
+  return state;
+}
+
 class DatabaseManager {
   private state: DatabaseState;
   private listeners: Set<() => void> = new Set();
@@ -658,7 +636,7 @@ class DatabaseManager {
           parsed &&
           typeof parsed === 'object' &&
           'version' in parsed &&
-          (parsed.version === 2 || parsed.version === 3 || parsed.version === 4 || parsed.version === 5) &&
+          (parsed.version === 2 || parsed.version === 3 || parsed.version === 4 || parsed.version === 5 || parsed.version === 6) &&
           'employees' in parsed &&
           Array.isArray(parsed.employees) &&
           'settings' in parsed &&
@@ -676,12 +654,12 @@ class DatabaseManager {
           Array.isArray(parsed.payrollSlips)
         ) {
           const state = parsed as DatabaseState;
-          if (state.version < 5) {
-            const migrated = migratePayrollCalculations(state);
-            this.saveToStorage(migrated);
-            return migrated;
-          }
-          return state;
+          const requiresMigration = state.version < 6;
+          const migrated = removeDemoData(
+            state.version < 5 ? migratePayrollCalculations(state) : state
+          );
+          if (requiresMigration) this.saveToStorage(migrated);
+          return migrated;
         }
       }
     } catch (e) {
@@ -1040,7 +1018,7 @@ class DatabaseManager {
       const parsed = JSON.parse(jsonString) as DatabaseState;
       if (
         !parsed ||
-        (parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5) ||
+        (parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5 && parsed.version !== 6) ||
         !parsed.settings ||
         !Array.isArray(parsed.employees) ||
         !Array.isArray(parsed.attendance) ||
@@ -1052,7 +1030,9 @@ class DatabaseManager {
       ) {
         return { success: false, message: 'ملف النسخة الاحتياطية غير صالح أو ناقص البنية' };
       }
-      this.state = parsed.version < 5 ? migratePayrollCalculations(parsed) : parsed;
+      this.state = removeDemoData(
+        parsed.version < 5 ? migratePayrollCalculations(parsed) : parsed
+      );
       this.notify();
       return { success: true, message: 'تم استعادة قاعدة بيانات DATABEST بنجاح' };
     } catch (e) {
