@@ -286,20 +286,24 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
 
       {/* Payroll Table */}
       <div className="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
-            <thead className="bg-slate-900 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+        <div
+          className="max-h-[70vh] overflow-auto overscroll-contain"
+          tabIndex={0}
+          aria-label="جدول الرواتب — استخدم أشرطة التمرير للتنقل بين الموظفين"
+        >
+          <table className="w-full min-w-[1100px] text-right text-xs">
+            <thead className="text-slate-400 uppercase tracking-wider font-semibold">
               <tr>
-                <th className="p-3.5">اسم الموظف وCIN</th>
-                <th className="p-3.5">POSTE</th>
-                <th className="p-3.5">الراتب الشهري</th>
-                <th className="p-3.5">التسبيق</th>
-                <th className="p-3.5">المرض</th>
-                <th className="p-3.5">الغياب</th>
-                <th className="p-3.5">Double Shift</th>
-                <th className="p-3.5">عمل يوم الراحة</th>
-                <th className="p-3.5 text-amber-300">الراتب الصافي</th>
-                <th className="p-3.5 text-center">إجراءات</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">اسم الموظف وCIN</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">POSTE</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">الراتب الشهري</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">التسبيق</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">المرض</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">الغياب</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">Double Shift</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">عمل يوم الراحة</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5 text-amber-300">الراتب الصافي</th>
+                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5 text-center">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-200">
