@@ -193,7 +193,7 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
     const headers = [
       'رقم التسجيل',
       'اسم الموظف',
-      'POST (الوظيفة)',
+      'POSTE',
       'القسم',
       'الراتب الشهري (د.م)',
       'رقم الهاتف',
@@ -362,7 +362,7 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                       </div>
                     </td>
 
-                    {/* 2. POST (الوظيفة) */}
+                    {/* 2. POSTE */}
                     <td className="p-4">
                       <div className="font-bold text-slate-100 text-xs">
                         {emp.roleTitle}
@@ -520,9 +520,9 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                   />
                 </div>
 
-                {/* 2. POST (الوظيفة والمهمة) */}
+                {/* 2. POSTE */}
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">POST (المسمى الوظيفي والمهمة بالمطعم) *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">POSTE *</label>
                   <input
                     type="text"
                     required

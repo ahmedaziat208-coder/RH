@@ -451,7 +451,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           </div>
                         </td>
 
-                        {/* 2. POST (الوظيفة والمهمة) */}
+                        {/* 2. POSTE */}
                         <td className="p-3.5">
                           <div className="font-bold text-slate-100 text-xs">
                             {emp.roleTitle}

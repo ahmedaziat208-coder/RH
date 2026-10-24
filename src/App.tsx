@@ -160,6 +160,7 @@ export default function App() {
         {activeTab === 'payroll' && (
           <PayrollView
             settings={dbState.settings}
+            employees={dbState.employees}
             payrollRuns={dbState.payrollRuns}
             payrollSlips={dbState.payrollSlips}
             onRecalculatePayroll={(month) => databest.generateOrRecalculatePayroll(month)}

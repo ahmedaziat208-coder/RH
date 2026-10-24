@@ -11,11 +11,12 @@ import {
   Check,
   Trash2
 } from 'lucide-react';
-import { PayrollSlip, PayrollRun, RestaurantSettings } from '../types';
+import { Employee, PayrollSlip, PayrollRun, RestaurantSettings } from '../types';
 import { formatCurrency, getCurrentMonth, getStationMeta } from '../utils/formatters';
 
 interface PayrollViewProps {
   settings: RestaurantSettings;
+  employees: Employee[];
   payrollRuns: PayrollRun[];
   payrollSlips: PayrollSlip[];
   onRecalculatePayroll: (month: string) => void;
@@ -28,6 +29,7 @@ interface PayrollViewProps {
 
 export const PayrollView: React.FC<PayrollViewProps> = ({
   settings,
+  employees,
   payrollRuns,
   payrollSlips,
   onRecalculatePayroll,
@@ -58,11 +60,18 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
 
   const currentRun = payrollRuns.find(r => r.month === selectedMonth);
   const currentSlips = payrollSlips.filter(s => s.month === selectedMonth);
+  const employeesWithoutSlips = employees.filter(employee =>
+    employee.status !== 'TERMINATED' &&
+    !currentSlips.some(slip => slip.employeeId === employee.id)
+  );
 
   const filteredSlips = currentSlips.filter(slip => {
     if (stationFilter === 'ALL') return true;
     return slip.station === stationFilter;
   });
+  const filteredEmployeesWithoutSlips = employeesWithoutSlips.filter(employee =>
+    stationFilter === 'ALL' || employee.station === stationFilter
+  );
 
   const openEditSlip = (slip: PayrollSlip) => {
     setEditingSlip(slip);
@@ -153,7 +162,13 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
 
   return (
     <div className="space-y-6">
-      
+      <div>
+        <h1 className="text-xl font-bold text-white">جدول الرواتب</h1>
+        <p className="text-sm text-slate-400 mt-1">
+          تتم إضافة الموظفين تلقائيًا من قائمة أسماء الموظفين، ثم احتساب رواتبهم عند إنشاء مسير الشهر.
+        </p>
+      </div>
+
       {/* Top Controls & Month Picker */}
       <div className="bg-slate-850 border border-slate-800 rounded-2xl p-5 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         
@@ -200,7 +215,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
             className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Calculator className="w-3.5 h-3.5 text-amber-400" />
-            <span>إعادة احتساب المسير (Maroc)</span>
+            <span>إعادة احتساب الرواتب (Maroc)</span>
           </button>
 
           {currentRun?.status !== 'PAID' && (
@@ -425,6 +440,46 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                       </div>
                     </td>
 
+                  </tr>
+                );
+              })}
+              {filteredEmployeesWithoutSlips.map(employee => {
+                const stationMeta = getStationMeta(employee.station);
+                return (
+                  <tr key={`employee-${employee.id}`} className="hover:bg-slate-800/50 transition-colors">
+                    <td className="p-3.5">
+                      <div className="font-bold text-white text-sm">{employee.fullName}</div>
+                      <div className="font-mono text-[11px] text-amber-400">
+                        CIN: {employee.cin} • <span className="text-slate-400">{employee.matricule}</span>
+                      </div>
+                    </td>
+                    <td className="p-3.5">
+                      <div className="font-medium text-slate-300">{employee.roleTitle}</div>
+                      <span className={`inline-block mt-0.5 text-[10px] px-2 py-0.2 rounded-md border ${stationMeta.bgLight}`}>
+                        {stationMeta.labelAr}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-mono font-medium">
+                      {formatCurrency(employee.baseSalary, '')}
+                    </td>
+                    <td colSpan={6} className="p-3.5 text-center text-slate-500">—</td>
+                    <td className="p-3.5">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-800 text-slate-300 border-slate-700">
+                        غير محتسب
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-center">
+                      {currentRun?.status !== 'PAID' ? (
+                        <button
+                          onClick={() => onRecalculatePayroll(selectedMonth)}
+                          className="px-2 py-1 rounded-md text-xs font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 transition-all"
+                        >
+                          احتساب الراتب
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-500">الشهر مصروف</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
