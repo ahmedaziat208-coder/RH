@@ -1,6 +1,7 @@
 import {
   Employee,
   AttendanceRecord,
+  OfficialHoliday,
   AdvanceRecord,
   BonusPenaltyRecord,
   TipsPoolRecord,
@@ -16,6 +17,7 @@ export interface DatabaseState {
   settings: RestaurantSettings;
   employees: Employee[];
   attendance: AttendanceRecord[];
+  officialHolidays: OfficialHoliday[];
   advances: AdvanceRecord[];
   adjustments: BonusPenaltyRecord[];
   tipsPools: TipsPoolRecord[];
@@ -499,11 +501,12 @@ function recalculateSlipAmounts(
 
 function createInitialMoroccanDatabaseState(): DatabaseState {
   return {
-    version: 6,
+    version: 7,
     lastUpdated: new Date().toISOString(),
     settings: DEFAULT_SETTINGS_MOROCCO,
     employees: [],
     attendance: [],
+    officialHolidays: [],
     advances: [],
     adjustments: [],
     tipsPools: [],
@@ -615,7 +618,7 @@ function removeDemoData(state: DatabaseState): DatabaseState {
       };
     });
 
-  state.version = 6;
+  state.version = 7;
   return state;
 }
 
@@ -636,7 +639,7 @@ class DatabaseManager {
           parsed &&
           typeof parsed === 'object' &&
           'version' in parsed &&
-          (parsed.version === 2 || parsed.version === 3 || parsed.version === 4 || parsed.version === 5 || parsed.version === 6) &&
+          (parsed.version === 2 || parsed.version === 3 || parsed.version === 4 || parsed.version === 5 || parsed.version === 6 || parsed.version === 7) &&
           'employees' in parsed &&
           Array.isArray(parsed.employees) &&
           'settings' in parsed &&
@@ -654,10 +657,12 @@ class DatabaseManager {
           Array.isArray(parsed.payrollSlips)
         ) {
           const state = parsed as DatabaseState;
-          const requiresMigration = state.version < 6;
+          const requiresMigration = state.version < 7 || !Array.isArray(state.officialHolidays);
+          state.officialHolidays = Array.isArray(state.officialHolidays) ? state.officialHolidays : [];
           const migrated = removeDemoData(
             state.version < 5 ? migratePayrollCalculations(state) : state
           );
+          migrated.version = 7;
           if (requiresMigration) this.saveToStorage(migrated);
           return migrated;
         }
@@ -708,6 +713,10 @@ class DatabaseManager {
 
   public getAttendance(): AttendanceRecord[] {
     return this.state.attendance;
+  }
+
+  public getOfficialHolidays(): OfficialHoliday[] {
+    return this.state.officialHolidays;
   }
 
   public getAdvances(): AdvanceRecord[] {
@@ -779,6 +788,19 @@ class DatabaseManager {
 
   public deleteAttendance(id: string): void {
     this.state.attendance = this.state.attendance.filter(a => a.id !== id);
+    this.notify();
+  }
+
+  // Mutations - Official Holidays
+  public addOfficialHoliday(holiday: Omit<OfficialHoliday, 'id'>): OfficialHoliday {
+    const newHoliday: OfficialHoliday = { ...holiday, id: `holiday-${Date.now()}` };
+    this.state.officialHolidays.unshift(newHoliday);
+    this.notify();
+    return newHoliday;
+  }
+
+  public deleteOfficialHoliday(id: string): void {
+    this.state.officialHolidays = this.state.officialHolidays.filter(holiday => holiday.id !== id);
     this.notify();
   }
 
@@ -1018,7 +1040,7 @@ class DatabaseManager {
       const parsed = JSON.parse(jsonString) as DatabaseState;
       if (
         !parsed ||
-        (parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5 && parsed.version !== 6) ||
+        (parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5 && parsed.version !== 6 && parsed.version !== 7) ||
         !parsed.settings ||
         !Array.isArray(parsed.employees) ||
         !Array.isArray(parsed.attendance) ||
@@ -1030,9 +1052,12 @@ class DatabaseManager {
       ) {
         return { success: false, message: 'ملف النسخة الاحتياطية غير صالح أو ناقص البنية' };
       }
+      const state = parsed as DatabaseState;
+      state.officialHolidays = Array.isArray(state.officialHolidays) ? state.officialHolidays : [];
       this.state = removeDemoData(
-        parsed.version < 5 ? migratePayrollCalculations(parsed) : parsed
+        parsed.version < 5 ? migratePayrollCalculations(state) : state
       );
+      this.state.version = 7;
       this.notify();
       return { success: true, message: 'تم استعادة قاعدة بيانات DATABEST بنجاح' };
     } catch (e) {

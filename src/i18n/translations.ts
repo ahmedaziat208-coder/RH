@@ -22,7 +22,18 @@ export interface TranslationDictionary {
   navAttendance: string;
   navAdvances: string;
   navTips: string;
+  navHolidays: string;
   navDatabest: string;
+  holidaysTitle: string;
+  holidaysDescription: string;
+  holidayName: string;
+  holidayDate: string;
+  holidayNotes: string;
+  addHoliday: string;
+  noHolidays: string;
+  deleteHoliday: string;
+  holidayPast: string;
+  holidayUpcoming: string;
   healthCardsExpiringSoon: string;
   pendingAdvancesBadge: string;
 
@@ -161,7 +172,18 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     navAttendance: 'الحضور والشفتات',
     navAdvances: 'السلفيات والبدلات',
     navTips: 'صندوق البقشيش',
+    navHolidays: 'العطل الرسمية',
     navDatabest: 'قاعدة البيانات DATABEST',
+    holidaysTitle: 'العطل الرسمية',
+    holidaysDescription: 'سجل وتابع مواعيد العطل الرسمية الخاصة بالمطعم.',
+    holidayName: 'اسم العطلة',
+    holidayDate: 'تاريخ العطلة',
+    holidayNotes: 'ملاحظات (اختياري)',
+    addHoliday: 'إضافة عطلة',
+    noHolidays: 'لا توجد عطل مسجلة بعد.',
+    deleteHoliday: 'حذف العطلة',
+    holidayPast: 'ماضية',
+    holidayUpcoming: 'قادمة',
     healthCardsExpiringSoon: 'شهادات صحية تنتهي قريباً',
     pendingAdvancesBadge: 'سلفيات معلقة للموافقة',
 
@@ -293,7 +315,18 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     navAttendance: 'Pointage & Horaires',
     navAdvances: 'Acomptes & Primes',
     navTips: 'Pourboires (Tips)',
+    navHolidays: 'Jours fériés',
     navDatabest: 'Base de Données DATABEST',
+    holidaysTitle: 'Jours fériés',
+    holidaysDescription: 'Enregistrez et suivez les jours fériés de votre établissement.',
+    holidayName: 'Nom du jour férié',
+    holidayDate: 'Date du jour férié',
+    holidayNotes: 'Notes (facultatif)',
+    addHoliday: 'Ajouter un jour férié',
+    noHolidays: 'Aucun jour férié enregistré.',
+    deleteHoliday: 'Supprimer le jour férié',
+    holidayPast: 'Passé',
+    holidayUpcoming: 'À venir',
     healthCardsExpiringSoon: 'Certificats médicaux expirant bientôt',
     pendingAdvancesBadge: 'Acomptes en attente de validation',
 
@@ -425,7 +458,18 @@ export const translations: Record<AppLanguage, TranslationDictionary> = {
     navAttendance: 'Attendance & Shifts',
     navAdvances: 'Advances & Bonuses',
     navTips: 'Tips Pool',
+    navHolidays: 'Public Holidays',
     navDatabest: 'Database DATABEST',
+    holidaysTitle: 'Public Holidays',
+    holidaysDescription: 'Record and track your restaurant’s official holidays.',
+    holidayName: 'Holiday name',
+    holidayDate: 'Holiday date',
+    holidayNotes: 'Notes (optional)',
+    addHoliday: 'Add holiday',
+    noHolidays: 'No holidays have been recorded yet.',
+    deleteHoliday: 'Delete holiday',
+    holidayPast: 'Past',
+    holidayUpcoming: 'Upcoming',
     healthCardsExpiringSoon: 'Health cards expiring soon',
     pendingAdvancesBadge: 'Advances pending approval',
 

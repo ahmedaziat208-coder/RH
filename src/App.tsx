@@ -9,6 +9,7 @@ import { AttendanceView } from './components/AttendanceView';
 import { AdvancesAndBonusesView } from './components/AdvancesAndBonusesView';
 import { TipsPoolView } from './components/TipsPoolView';
 import { DatabaseManagerView } from './components/DatabaseManagerView';
+import { OfficialHolidaysView } from './components/OfficialHolidaysView';
 import { PayslipModal } from './components/PayslipModal';
 import { SettingsModal } from './components/SettingsModal';
 import { PayrollSlip } from './types';
@@ -204,6 +205,15 @@ export default function App() {
             tipsPools={dbState.tipsPools}
             onAddTipsPool={(pool) => databest.addTipsPool(pool)}
             onDeleteTipsPool={(id) => databest.deleteTipsPool(id)}
+          />
+        )}
+
+        {activeTab === 'holidays' && (
+          <OfficialHolidaysView
+            holidays={dbState.officialHolidays}
+            language={dbState.settings.language}
+            onAddHoliday={(holiday) => databest.addOfficialHoliday(holiday)}
+            onDeleteHoliday={(id) => databest.deleteOfficialHoliday(id)}
           />
         )}
 

@@ -58,6 +58,13 @@ export interface AttendanceRecord {
   notes?: string;
 }
 
+export interface OfficialHoliday {
+  id: string;
+  name: string;
+  date: string;               // YYYY-MM-DD
+  notes?: string;
+}
+
 export type AdvanceStatus = 'PENDING' | 'APPROVED' | 'DEDUCTED' | 'REJECTED';
 
 export interface AdvanceRecord {

@@ -6,7 +6,8 @@ import {
   CalendarCheck, 
   HandCoins, 
   PiggyBank, 
-  Database
+  Database,
+  CalendarDays,
 } from 'lucide-react';
 import { getTranslation, AppLanguage } from '../i18n/translations';
 
@@ -17,6 +18,7 @@ export type ActiveTab =
   | 'attendance'
   | 'advances'
   | 'tips'
+  | 'holidays'
   | 'databest';
 
 interface NavigationProps {
@@ -72,6 +74,11 @@ export const Navigation: React.FC<NavigationProps> = ({
       id: 'tips' as ActiveTab,
       label: t.navTips,
       icon: PiggyBank,
+    },
+    {
+      id: 'holidays' as ActiveTab,
+      label: t.navHolidays,
+      icon: CalendarDays,
     },
     {
       id: 'databest' as ActiveTab,
