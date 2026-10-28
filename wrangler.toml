@@ -1,0 +1,8 @@
+name = "rh"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-28"
+
+[[d1_databases]]
+binding = "RH_DB"
+database_name = "rh-payroll-db"
+database_id = "a1364a8b-ce50-43bf-93d1-a6265d89a892"
