@@ -30,8 +30,6 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
   const stationMeta = getStationMeta(slip.station);
   const contractMeta = getContractLabel(slip.contractType);
   const dailySalary = slip.baseSalary / 26;
-  const sicknessDeduction = Math.round(dailySalary * (slip.sickDays ?? 0));
-  const absenceDeduction = Math.round(dailySalary * (slip.absentDays ?? 0));
   const doubleShiftAmount = Math.round(dailySalary * (slip.doubleShiftCount ?? 0));
   const restDayWorkAmount = Math.round(dailySalary * (slip.restDayWorkDays ?? 0));
 
@@ -294,14 +292,6 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
               </div>
               <table className="w-full text-xs">
                 <tbody className="divide-y divide-slate-200">
-                  <tr className="hover:bg-slate-50">
-                    <td className="p-2 text-slate-700">المرض ({slip.sickDays ?? 0} يوم)</td>
-                    <td className="p-2 font-mono text-rose-700 text-left font-semibold">{formatCurrency(sicknessDeduction, '')}</td>
-                  </tr>
-                  <tr className="hover:bg-slate-50">
-                    <td className="p-2 text-slate-700">الغياب ({slip.absentDays ?? 0} يوم)</td>
-                    <td className="p-2 font-mono text-rose-700 text-left font-semibold">{formatCurrency(absenceDeduction, '')}</td>
-                  </tr>
                   <tr className="hover:bg-slate-50">
                     <td className="p-2 text-slate-700">التسبيق</td>
                     <td className="p-2 font-mono text-rose-700 text-left font-bold">{formatCurrency(slip.advancesDeducted, '')}</td>
