@@ -73,52 +73,78 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
   );
 
   const exportPdf = async () => {
-    if (filteredSlips.length === 0) return;
-    const tableElement = document.getElementById('payroll-table-export');
-    if (!tableElement) return;
+    if (filteredSlips.length === 0) {
+      window.alert('لا توجد بيانات رواتب للتنزيل في هذا الشهر.');
+      return;
+    }
 
     setIsExportingPdf(true);
     try {
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
-      const canvas = await html2canvas(tableElement, {
-        backgroundColor: '#ffffff',
-        scale: 3,
-        useCORS: true,
-        logging: false,
-        windowWidth: Math.max(tableElement.scrollWidth, tableElement.clientWidth),
-        windowHeight: tableElement.scrollHeight,
-      });
-
+      const { jsPDF } = await import('jspdf');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+      pdf.setProperties({ title: `Payroll ${selectedMonth}`, subject: 'OBAYOLI payroll statement' });
+
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 6;
-      const imageWidth = pageWidth - margin * 2;
-      const pageContentHeight = pageHeight - margin * 2;
-      const imageHeight = canvas.height * imageWidth / canvas.width;
-      let sourceY = 0;
-      let pageNumber = 0;
+      const margin = 8;
+      const headers = ['Employee', 'CIN', 'Poste', 'Base Salary', 'Advance', 'Sick', 'Absent', 'Double Shift', 'Rest Day', 'Net Salary'];
+      const columnWidths = [42, 24, 38, 24, 22, 18, 18, 22, 22, 24];
+      let y = 22;
 
-      while (sourceY < canvas.height) {
-        const sourceHeight = Math.min(canvas.height - sourceY, Math.ceil(pageContentHeight * canvas.width / imageWidth));
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
-        pageCanvas.getContext('2d')?.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
-        if (pageNumber > 0) pdf.addPage();
-        const renderedHeight = sourceHeight * imageWidth / canvas.width;
-        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', margin, margin, imageWidth, renderedHeight, undefined, 'FAST');
-        sourceY += sourceHeight;
-        pageNumber += 1;
-      }
+      pdf.setFontSize(15);
+      pdf.setTextColor(30, 41, 59);
+      pdf.text(`OBAYOLI - Payroll ${selectedMonth}`, margin, 12);
+      pdf.setFontSize(7);
 
+      const drawHeader = () => {
+        let x = margin;
+        pdf.setFillColor(30, 41, 59);
+        pdf.setTextColor(255, 255, 255);
+        pdf.rect(margin, y, columnWidths.reduce((sum, width) => sum + width, 0), 8, 'F');
+        headers.forEach((header, index) => {
+          pdf.text(header, x + 1.5, y + 5.3, { maxWidth: columnWidths[index] - 3 });
+          x += columnWidths[index];
+        });
+        y += 8;
+        pdf.setTextColor(30, 41, 59);
+      };
+
+      drawHeader();
+      filteredSlips.forEach((slip, rowIndex) => {
+        if (y > pageHeight - 14) {
+          pdf.addPage();
+          y = 14;
+          drawHeader();
+        }
+        const values = [
+          slip.employeeName,
+          slip.cin,
+          slip.roleTitle,
+          formatCurrency(slip.baseSalary, settings.currencySymbol),
+          formatCurrency(slip.advancesDeducted, settings.currencySymbol),
+          String(slip.sickDays ?? 0),
+          String(slip.absentDays ?? 0),
+          String(slip.doubleShiftCount ?? 0),
+          String(slip.restDayWorkDays ?? 0),
+          formatCurrency(slip.netSalary, settings.currencySymbol),
+        ];
+        let x = margin;
+        pdf.setFillColor(rowIndex % 2 === 0 ? 248 : 255, rowIndex % 2 === 0 ? 250 : 255, rowIndex % 2 === 0 ? 252 : 255);
+        pdf.rect(margin, y, columnWidths.reduce((sum, width) => sum + width, 0), 9, 'F');
+        values.forEach((value, index) => {
+          const sanitized = value.replace(/[\u0600-\u06FF]/g, '').trim() || 'Employee';
+          pdf.text(sanitized, x + 1.5, y + 5.5, { maxWidth: columnWidths[index] - 3 });
+          x += columnWidths[index];
+        });
+        y += 9;
+      });
+
+      pdf.setFontSize(8);
+      pdf.text(`Generated: ${new Date().toLocaleDateString()} | Employees: ${filteredSlips.length} | Page 1`, margin, pageHeight - 6);
       pdf.save(`OBAYOLI_Payroll_${selectedMonth}.pdf`);
     } catch (error) {
       console.error('Failed to export payroll PDF:', error);
-      window.alert('تعذر إنشاء ملف PDF للرواتب.');
+      window.alert(`تعذر إنشاء ملف PDF للرواتب: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}`);
     } finally {
       setIsExportingPdf(false);
     }
