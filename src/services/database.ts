@@ -631,9 +631,13 @@ function removeDemoData(state: DatabaseState): DatabaseState {
 class DatabaseManager {
   private state: DatabaseState;
   private listeners: Set<() => void> = new Set();
+  private cloudRevision: number | null = null;
+  private cloudSyncInProgress = false;
+  private cloudSyncQueued = false;
 
   constructor() {
     this.state = this.loadFromStorage();
+    void this.loadCloudState();
   }
 
   private loadFromStorage(): DatabaseState {
@@ -695,6 +699,69 @@ class DatabaseManager {
     }
   }
 
+  private applyCloudState(state: DatabaseState, revision: number): void {
+    state.officialHolidays = Array.isArray(state.officialHolidays) ? state.officialHolidays : [];
+    state.holidayWorkRecords = Array.isArray(state.holidayWorkRecords) ? state.holidayWorkRecords : [];
+    state.annualLeaveRecords = Array.isArray(state.annualLeaveRecords) ? state.annualLeaveRecords : [];
+    state.version = 8;
+    this.state = removeDemoData(state);
+    this.cloudRevision = revision;
+    this.saveToStorage(this.state);
+    this.listeners.forEach(listener => listener());
+  }
+
+  public async loadCloudState(): Promise<void> {
+    try {
+      const response = await fetch('/api/state', { cache: 'no-store' });
+      if (!response.ok) return;
+      const payload = await response.json() as { revision: number; state: DatabaseState };
+      if (payload?.state && typeof payload.revision === 'number') {
+        this.applyCloudState(payload.state, payload.revision);
+      }
+    } catch (error) {
+      console.warn('Shared database is unavailable; using local cache:', error);
+    }
+  }
+
+  private async syncCloudState(): Promise<void> {
+    if (this.cloudSyncInProgress) {
+      this.cloudSyncQueued = true;
+      return;
+    }
+
+    this.cloudSyncInProgress = true;
+    try {
+      if (this.cloudRevision === null) {
+        await this.loadCloudState();
+        if (this.cloudRevision === null) return;
+      }
+
+      const snapshot = JSON.parse(JSON.stringify(this.state)) as DatabaseState;
+      snapshot.lastUpdated = new Date().toISOString();
+      const revision = this.cloudRevision;
+      const response = await fetch('/api/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: snapshot, revision }),
+      });
+
+      if (response.ok) {
+        const payload = await response.json() as { revision: number };
+        this.cloudRevision = payload.revision;
+      } else if (response.status === 409) {
+        await this.loadCloudState();
+      }
+    } catch (error) {
+      console.warn('Failed to synchronize shared database:', error);
+    } finally {
+      this.cloudSyncInProgress = false;
+      if (this.cloudSyncQueued) {
+        this.cloudSyncQueued = false;
+        void this.syncCloudState();
+      }
+    }
+  }
+
   public subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -703,6 +770,7 @@ class DatabaseManager {
   private notify(): void {
     this.saveToStorage(this.state);
     this.listeners.forEach(fn => fn());
+    void this.syncCloudState();
   }
 
   // Getters
