@@ -255,7 +255,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
 
       {/* Payroll summary */}
       {currentRun && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-gradient-to-r from-slate-850 to-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gradient-to-r from-slate-850 to-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
           <div>
             <span className="text-[11px] text-slate-400 block font-medium">عدد الموظفين:</span>
             <span className="text-xl font-bold font-mono text-white mt-1 block">
@@ -267,15 +267,6 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
             <span className="text-[11px] text-slate-400 block font-medium">إجمالي الرواتب الشهرية:</span>
             <span className="text-xl font-bold font-mono text-slate-200 mt-1 block">
               {formatCurrency(currentSlips.reduce((sum, slip) => sum + slip.baseSalary, 0), settings.currencySymbol)}
-            </span>
-          </div>
-
-          <div>
-            <span className="text-[11px] text-slate-400 block font-medium">Double Shift وعمل يوم الراحة:</span>
-            <span className="text-xl font-bold font-mono text-cyan-300 mt-1 block">
-              {formatCurrency(currentSlips.reduce((sum, slip) =>
-                sum + Math.round((slip.baseSalary / 26) * ((slip.doubleShiftCount ?? 0) + (slip.restDayWorkDays ?? 0))), 0
-              ), settings.currencySymbol)}
             </span>
           </div>
 
