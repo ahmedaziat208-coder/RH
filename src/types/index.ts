@@ -141,6 +141,18 @@ export interface TipsPoolRecord {
 export type PayrollStatus = 'DRAFT' | 'APPROVED' | 'PAID';
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'CHECK';
 
+export interface PayrollArchive {
+  id: string;
+  month: string;
+  archivedAt: string;
+  run: PayrollRun | null;
+  slips: PayrollSlip[];
+  attendance: AttendanceRecord[];
+  advances: AdvanceRecord[];
+  adjustments: BonusPenaltyRecord[];
+  tipsPools: TipsPoolRecord[];
+}
+
 export interface PayrollSlip {
   id: string;
   payrollRunId: string;

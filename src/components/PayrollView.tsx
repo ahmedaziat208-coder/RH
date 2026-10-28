@@ -10,7 +10,7 @@ import {
   Check,
   Trash2
 } from 'lucide-react';
-import { Employee, PayrollSlip, PayrollRun, RestaurantSettings } from '../types';
+import { Employee, PayrollSlip, PayrollRun, PayrollArchive, RestaurantSettings } from '../types';
 import { formatCurrency, getCurrentMonth, getStationMeta } from '../utils/formatters';
 
 interface PayrollViewProps {
@@ -18,6 +18,7 @@ interface PayrollViewProps {
   employees: Employee[];
   payrollRuns: PayrollRun[];
   payrollSlips: PayrollSlip[];
+  payrollArchives: PayrollArchive[];
   onRecalculatePayroll: (month: string) => void;
   onUpdateRunStatus: (month: string, status: PayrollRun['status']) => void;
   onSelectSlipForPrint: (slip: PayrollSlip) => void;
@@ -31,6 +32,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
   employees,
   payrollRuns,
   payrollSlips,
+  payrollArchives,
   onRecalculatePayroll,
   onUpdateRunStatus,
   onSelectSlipForPrint,
@@ -43,6 +45,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
 
   const monthOptions = Array.from(new Set([
     ...payrollRuns.map(r => r.month),
+    ...payrollArchives.map(archive => archive.month),
     ...[0, -1, -2].map(offset => {
       const date = new Date();
       date.setDate(1);
@@ -51,8 +54,9 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
     }),
   ])).sort().reverse();
 
-  const currentRun = payrollRuns.find(r => r.month === selectedMonth);
-  const currentSlips = payrollSlips.filter(s => s.month === selectedMonth);
+  const selectedArchive = payrollArchives.find(archive => archive.month === selectedMonth);
+  const currentRun = selectedArchive?.run || payrollRuns.find(r => r.month === selectedMonth);
+  const currentSlips = selectedArchive ? selectedArchive.slips : payrollSlips.filter(s => s.month === selectedMonth);
   const employeesWithoutSlips = employees.filter(employee =>
     employee.status !== 'TERMINATED' &&
     !currentSlips.some(slip => slip.employeeId === employee.id)
@@ -136,6 +140,12 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
         </p>
       </div>
 
+      {selectedArchive && (
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
+          أرشيف شهر {selectedArchive.month} — للقراءة فقط. تضمّن الرواتب والغياب والمرض والسلف والاقتطاعات والبقشيش المحفوظة لهذا الشهر.
+        </div>
+      )}
+
       {/* Top Controls & Month Picker */}
       <div className="bg-slate-850 border border-slate-800 rounded-2xl p-5 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         
@@ -177,7 +187,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => onRecalculatePayroll(selectedMonth)}
-            disabled={currentRun?.status === 'PAID'}
+            disabled={currentRun?.status === 'PAID' || !!selectedArchive}
             title="إعادة احتساب الرواتب وفق الراتب الشهري والأيام والتسبيقات"
             className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -185,7 +195,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
             <span>إعادة احتساب الرواتب</span>
           </button>
 
-          {currentRun?.status !== 'PAID' && (
+          {currentRun?.status !== 'PAID' && !selectedArchive && (
             <button
               onClick={() => onUpdateRunStatus(selectedMonth, 'PAID')}
               className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
@@ -203,7 +213,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
             <Download className="w-4 h-4" />
           </button>
 
-          {currentRun && (
+          {currentRun && !selectedArchive && (
             <button
               onClick={() => {
                 if (confirm(`هل أنت متأكد من حذف مسير رواتب شهر ${selectedMonth} بالكامل؟`)) {
@@ -347,7 +357,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                         min="0"
                         step="0.01"
                         defaultValue={slip.advancesDeducted}
-                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID' || !!selectedArchive}
                         onBlur={(event) => {
                           const amount = Number(event.currentTarget.value);
                           if (Number.isFinite(amount) && amount >= 0) {
@@ -366,7 +376,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                         min="0"
                         step="1"
                         defaultValue={slip.sickDays ?? 0}
-                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID' || !!selectedArchive}
                         onBlur={(event) => {
                           const days = Number(event.currentTarget.value);
                           if (Number.isInteger(days) && days >= 0) onUpdateSlip(slip.id, { sickDays: days });
@@ -386,7 +396,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                         min="0"
                         step="1"
                         defaultValue={slip.absentDays ?? 0}
-                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID' || !!selectedArchive}
                         onBlur={(event) => {
                           const days = Number(event.currentTarget.value);
                           if (Number.isInteger(days) && days >= 0) onUpdateSlip(slip.id, { absentDays: days });
@@ -406,7 +416,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                         min="0"
                         step="1"
                         defaultValue={slip.doubleShiftCount ?? 0}
-                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID' || !!selectedArchive}
                         onBlur={(event) => {
                           const count = Number(event.currentTarget.value);
                           if (Number.isInteger(count) && count >= 0) onUpdateSlip(slip.id, { doubleShiftCount: count });
@@ -426,7 +436,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                         min="0"
                         step="1"
                         defaultValue={slip.restDayWorkDays ?? 0}
-                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID'}
+                        disabled={slip.status === 'PAID' || currentRun?.status === 'PAID' || !!selectedArchive}
                         onBlur={(event) => {
                           const days = Number(event.currentTarget.value);
                           if (Number.isInteger(days) && days >= 0) onUpdateSlip(slip.id, { restDayWorkDays: days });

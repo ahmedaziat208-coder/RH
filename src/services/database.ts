@@ -9,9 +9,10 @@ import {
   TipsPoolRecord,
   PayrollSlip,
   PayrollRun,
+  PayrollArchive,
   RestaurantSettings,
 } from '../types';
-import { getCurrentDateString } from '../utils/formatters';
+import { getCurrentDateString, getCurrentMonth } from '../utils/formatters';
 
 export interface DatabaseState {
   version: number;
@@ -27,6 +28,8 @@ export interface DatabaseState {
   tipsPools: TipsPoolRecord[];
   payrollRuns: PayrollRun[];
   payrollSlips: PayrollSlip[];
+  payrollArchives: PayrollArchive[];
+  lastPayrollRolloverMonth?: string;
 }
 
 const STORAGE_KEY = 'OBAYOLI_DATABEST_MOROCCO_V1';
@@ -518,6 +521,8 @@ function createInitialMoroccanDatabaseState(): DatabaseState {
     tipsPools: [],
     payrollRuns: [],
     payrollSlips: [],
+    payrollArchives: [],
+    lastPayrollRolloverMonth: getCurrentMonth(),
   };
 }
 
@@ -628,6 +633,46 @@ function removeDemoData(state: DatabaseState): DatabaseState {
   return state;
 }
 
+function performAutomaticPayrollRollover(state: DatabaseState): DatabaseState {
+  state.payrollArchives = Array.isArray(state.payrollArchives) ? state.payrollArchives : [];
+  const currentMonth = getCurrentMonth();
+  const archivedMonths = new Set(state.payrollArchives.map(archive => archive.month));
+  const previousMonths = Array.from(new Set([
+    ...state.payrollRuns.map(run => run.month),
+    ...state.payrollSlips.map(slip => slip.month),
+    ...state.attendance.map(record => record.date.slice(0, 7)),
+    ...state.advances.map(record => record.deductionMonth),
+    ...state.adjustments.map(record => record.month),
+    ...state.tipsPools.map(record => record.month),
+  ])).filter(month => /^\d{4}-\d{2}$/.test(month) && month < currentMonth).sort();
+
+  for (const month of previousMonths) {
+    if (archivedMonths.has(month)) continue;
+    const run = state.payrollRuns.find(item => item.month === month) || null;
+    state.payrollArchives.push({
+      id: `archive-${month}-${Date.now()}`,
+      month,
+      archivedAt: new Date().toISOString(),
+      run,
+      slips: state.payrollSlips.filter(slip => slip.month === month).map(slip => ({ ...slip })),
+      attendance: state.attendance.filter(record => record.date.startsWith(month)).map(record => ({ ...record })),
+      advances: state.advances.filter(record => record.deductionMonth === month).map(record => ({ ...record })),
+      adjustments: state.adjustments.filter(record => record.month === month).map(record => ({ ...record })),
+      tipsPools: state.tipsPools.filter(record => record.month === month).map(record => ({ ...record })),
+    });
+  }
+
+  state.attendance = state.attendance.filter(record => record.date.slice(0, 7) >= currentMonth);
+  state.advances = state.advances.filter(record => record.deductionMonth >= currentMonth);
+  state.adjustments = state.adjustments.filter(record => record.month >= currentMonth);
+  state.tipsPools = state.tipsPools.filter(record => record.month >= currentMonth);
+  state.payrollRuns = state.payrollRuns.filter(run => run.month >= currentMonth);
+  state.payrollSlips = state.payrollSlips.filter(slip => slip.month >= currentMonth);
+  state.payrollArchives.sort((a, b) => b.month.localeCompare(a.month));
+  state.lastPayrollRolloverMonth = currentMonth;
+  return state;
+}
+
 class DatabaseManager {
   private state: DatabaseState;
   private listeners: Set<() => void> = new Set();
@@ -636,7 +681,8 @@ class DatabaseManager {
   private cloudSyncQueued = false;
 
   constructor() {
-    this.state = this.loadFromStorage();
+    this.state = performAutomaticPayrollRollover(this.loadFromStorage());
+    this.saveToStorage(this.state);
     void this.loadCloudState();
   }
 
@@ -704,7 +750,8 @@ class DatabaseManager {
     state.holidayWorkRecords = Array.isArray(state.holidayWorkRecords) ? state.holidayWorkRecords : [];
     state.annualLeaveRecords = Array.isArray(state.annualLeaveRecords) ? state.annualLeaveRecords : [];
     state.version = 8;
-    this.state = removeDemoData(state);
+    state.payrollArchives = Array.isArray(state.payrollArchives) ? state.payrollArchives : [];
+    this.state = performAutomaticPayrollRollover(removeDemoData(state));
     this.cloudRevision = revision;
     this.saveToStorage(this.state);
     this.listeners.forEach(listener => listener());

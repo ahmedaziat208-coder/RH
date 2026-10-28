@@ -169,6 +169,7 @@ export default function App() {
             employees={dbState.employees}
             payrollRuns={dbState.payrollRuns}
             payrollSlips={dbState.payrollSlips}
+            payrollArchives={dbState.payrollArchives || []}
             onRecalculatePayroll={(month) => databest.generateOrRecalculatePayroll(month)}
             onUpdateRunStatus={(month, status) => databest.updatePayrollRunStatus(month, status)}
             onSelectSlipForPrint={(slip) => setSelectedSlipForPrint(slip)}

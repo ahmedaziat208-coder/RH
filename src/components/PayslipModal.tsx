@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   X, 
   Printer, 
   Utensils, 
   CheckCircle2, 
-  FileText
+  FileText,
+  Download,
+  LoaderCircle
 } from 'lucide-react';
 import { PayrollSlip, RestaurantSettings } from '../types';
 import { formatCurrency, getStationMeta, getContractLabel, amountToArabicWords, getCurrentDateString } from '../utils/formatters';
@@ -24,6 +26,7 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
 }) => {
   if (!slip) return null;
 
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const stationMeta = getStationMeta(slip.station);
   const contractMeta = getContractLabel(slip.contractType);
   const dailySalary = slip.baseSalary / 26;
@@ -34,6 +37,61 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    setIsExportingPdf(true);
+    try {
+      const element = document.getElementById('printable-payslip');
+      if (!element) return;
+
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+      });
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const availableWidth = pageWidth - margin * 2;
+      const availableHeight = pageHeight - margin * 2;
+      const imageWidth = availableWidth;
+      const imageHeight = canvas.height * imageWidth / canvas.width;
+      let remainingHeight = imageHeight;
+      let sourceY = 0;
+
+      while (remainingHeight > 0) {
+        const pageSliceHeight = Math.min(availableHeight, remainingHeight);
+        const pageCanvas = document.createElement('canvas');
+        const sourceHeight = Math.min(canvas.height - sourceY, Math.round(pageSliceHeight * canvas.width / imageWidth));
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        const context = pageCanvas.getContext('2d');
+        context?.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+
+        if (sourceY > 0) pdf.addPage();
+        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', margin, margin, imageWidth, sourceHeight * imageWidth / canvas.width, undefined, 'FAST');
+        sourceY += sourceHeight;
+        remainingHeight = imageHeight - sourceY * imageWidth / canvas.width;
+      }
+
+      const safeName = slip.employeeName.replace(/[\\/:*?"<>|]+/g, '').trim() || 'employee';
+      pdf.save(`Payslip-${safeName}-${slip.month}.pdf`);
+    } catch (error) {
+      console.error('Failed to export payslip PDF:', error);
+      window.alert('تعذر إنشاء ملف PDF. حاول مرة أخرى.');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   return (
@@ -74,13 +132,21 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
               </button>
             )}
 
-            {/* Print Button */}
+            {/* High-quality PDF and print actions */}
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isExportingPdf}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all shadow-md active:scale-95 cursor-pointer disabled:cursor-wait disabled:opacity-70"
+            >
+              {isExportingPdf ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              <span>{isExportingPdf ? 'جاري إنشاء PDF...' : 'تنزيل PDF'}</span>
+            </button>
             <button
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 transition-all shadow-md active:scale-95 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>طباعة ورقة الأداء (A4)</span>
+              <span>طباعة (A4)</span>
             </button>
 
             {/* Close Button */}
