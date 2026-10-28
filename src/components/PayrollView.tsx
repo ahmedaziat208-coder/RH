@@ -280,11 +280,9 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
           </div>
 
           <div>
-            <span className="text-[11px] text-slate-400 block font-medium">خصم المرض والغياب والتسبيق:</span>
+            <span className="text-[11px] text-slate-400 block font-medium">خصم التسبيق فقط:</span>
             <span className="text-xl font-bold font-mono text-rose-400 mt-1 block">
-              {formatCurrency(currentSlips.reduce((sum, slip) =>
-                sum + Math.round((slip.baseSalary / 26) * ((slip.sickDays ?? 0) + (slip.absentDays ?? 0))) + slip.advancesDeducted, 0
-              ), settings.currencySymbol)}
+              {formatCurrency(currentSlips.reduce((sum, slip) => sum + slip.advancesDeducted, 0), settings.currencySymbol)}
             </span>
           </div>
 
