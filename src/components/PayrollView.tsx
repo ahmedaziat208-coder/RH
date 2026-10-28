@@ -8,7 +8,8 @@ import {
   Calendar, 
   Filter, 
   Check,
-  Trash2
+  Trash2,
+  LoaderCircle
 } from 'lucide-react';
 import { Employee, PayrollSlip, PayrollRun, PayrollArchive, RestaurantSettings } from '../types';
 import { formatCurrency, getCurrentMonth, getStationMeta } from '../utils/formatters';
@@ -42,6 +43,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
 }) => {
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
   const [stationFilter, setStationFilter] = useState<string>('ALL');
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const monthOptions = Array.from(new Set([
     ...payrollRuns.map(r => r.month),
@@ -70,63 +72,56 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
     stationFilter === 'ALL' || employee.station === stationFilter
   );
 
-  const exportCsv = () => {
+  const exportPdf = async () => {
     if (filteredSlips.length === 0) return;
-    const headers = [
-      'رقم التسجيل',
-      'بطاقة CIN',
-      'اسم الموظف',
-      'POSTE',
-      'الراتب الشهري (د.م)',
-      'الراتب اليومي (الراتب الشهري ÷ 26)',
-      'التسبيق (د.م)',
-      'أيام المرض',
-      'خصم المرض (د.م)',
-      'أيام الغياب',
-      'خصم الغياب (د.م)',
-      'عدد Double Shift',
-      'مبلغ Double Shift (د.م)',
-      'أيام عمل الراحة',
-      'مبلغ عمل الراحة (د.م)',
-      'الراتب الصافي (د.م)',
-      'حالة المعادلة',
-    ];
+    const tableElement = document.getElementById('payroll-table-export');
+    if (!tableElement) return;
 
-    const rows = filteredSlips.map(slip => {
-      const usesCurrentFormula = slip.payrollFormulaVersion === 1;
-      const dailySalary = slip.baseSalary / 26;
-      return [
-        slip.employeeMatricule,
-        slip.cin,
-        slip.employeeName,
-        slip.roleTitle,
-        slip.baseSalary,
-        usesCurrentFormula ? dailySalary : '',
-        slip.advancesDeducted,
-        usesCurrentFormula ? slip.sickDays ?? 0 : '',
-        usesCurrentFormula ? Math.round(dailySalary * (slip.sickDays ?? 0)) : '',
-        usesCurrentFormula ? slip.absentDays ?? 0 : '',
-        usesCurrentFormula ? Math.round(dailySalary * (slip.absentDays ?? 0)) : '',
-        usesCurrentFormula ? slip.doubleShiftCount ?? 0 : '',
-        usesCurrentFormula ? Math.round(dailySalary * (slip.doubleShiftCount ?? 0)) : '',
-        usesCurrentFormula ? slip.restDayWorkDays ?? 0 : '',
-        usesCurrentFormula ? Math.round(dailySalary * (slip.restDayWorkDays ?? 0)) : '',
-        slip.netSalary,
-        usesCurrentFormula ? 'المعادلة الحالية' : 'أرشيف سابق',
-      ];
-    });
+    setIsExportingPdf(true);
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      const canvas = await html2canvas(tableElement, {
+        backgroundColor: '#ffffff',
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        windowWidth: Math.max(tableElement.scrollWidth, tableElement.clientWidth),
+        windowHeight: tableElement.scrollHeight,
+      });
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,\uFEFF' +
-      [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 6;
+      const imageWidth = pageWidth - margin * 2;
+      const pageContentHeight = pageHeight - margin * 2;
+      const imageHeight = canvas.height * imageWidth / canvas.width;
+      let sourceY = 0;
+      let pageNumber = 0;
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `OBAYOLI_Paie_Maroc_${selectedMonth}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      while (sourceY < canvas.height) {
+        const sourceHeight = Math.min(canvas.height - sourceY, Math.ceil(pageContentHeight * canvas.width / imageWidth));
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        pageCanvas.getContext('2d')?.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+        if (pageNumber > 0) pdf.addPage();
+        const renderedHeight = sourceHeight * imageWidth / canvas.width;
+        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', margin, margin, imageWidth, renderedHeight, undefined, 'FAST');
+        sourceY += sourceHeight;
+        pageNumber += 1;
+      }
+
+      pdf.save(`OBAYOLI_Payroll_${selectedMonth}.pdf`);
+    } catch (error) {
+      console.error('Failed to export payroll PDF:', error);
+      window.alert('تعذر إنشاء ملف PDF للرواتب.');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   return (
@@ -206,11 +201,13 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
           )}
 
           <button
-            onClick={exportCsv}
-            title="تصدير جدول المسير إلى Excel CSV"
-            className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+            onClick={exportPdf}
+            disabled={isExportingPdf}
+            title="تنزيل جدول المسير بصيغة PDF عالية الجودة"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 disabled:opacity-70 transition-colors"
           >
-            <Download className="w-4 h-4" />
+            {isExportingPdf ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            <span>{isExportingPdf ? 'جاري التنزيل...' : 'تنزيل PDF'}</span>
           </button>
 
           {currentRun && !selectedArchive && (
@@ -297,6 +294,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
       {/* Payroll Table */}
       <div className="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
         <div
+          id="payroll-table-export"
           className="max-h-[70vh] overflow-auto overscroll-contain"
           tabIndex={0}
           aria-label="جدول الرواتب — استخدم أشرطة التمرير للتنقل بين الموظفين"
