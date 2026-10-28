@@ -6,9 +6,11 @@ import {
   Receipt, 
   Languages,
   CheckCircle2,
-  Save
+  Save,
+  ShieldCheck
 } from 'lucide-react';
 import { RestaurantSettings } from '../types';
+import { updatePin, setRecoveryEmail } from '../services/auth';
 import { getTranslation, AppLanguage } from '../i18n/translations';
 
 interface SettingsModalProps {
@@ -24,17 +26,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   onSave,
 }) => {
-  if (!isOpen) return null;
-
   const [form, setForm] = useState<RestaurantSettings>({
     ...settings,
     language: settings.language || 'ar',
   });
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [securityMessage, setSecurityMessage] = useState('');
 
   const t = getTranslation(form.language);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSecurityMessage('');
+
+    if (newPin || confirmPin) {
+      if (!/^\d{4,8}$/.test(newPin) || newPin !== confirmPin) {
+        setSecurityMessage(form.language === 'ar'
+          ? 'أدخل رمزاً من 4 إلى 8 أرقام ثم أكد الرمز بشكل متطابق.'
+          : 'Enter a matching numeric code of 4 to 8 digits.');
+        return;
+      }
+      await updatePin(newPin, form.email);
+    } else {
+      await setRecoveryEmail(form.email);
+    }
+
     onSave(form);
     onClose();
   };
@@ -264,10 +283,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
                 />
               </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">{form.language === 'ar' ? 'البريد الإلكتروني الرسمي' : 'Official email'}</label>
+                <input
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  dir="ltr"
+                />
+              </div>
             </div>
           </div>
 
-          {/* 3. Moroccan Payroll Rules */}
+          {/* 3. Access Security */}
+          <div className="pt-3 border-t border-slate-800">
+            <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" />
+              {form.language === 'ar' ? 'أمان الدخول والاستعادة بالبريد' : 'Access and email recovery'}
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">{form.language === 'ar' ? 'رمز دخول جديد (4-8 أرقام)' : 'New access code (4-8 digits)'}</label>
+                <input type="password" inputMode="numeric" maxLength={8} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))} placeholder="••••" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-center tracking-widest" />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">{form.language === 'ar' ? 'تأكيد رمز الدخول' : 'Confirm access code'}</label>
+                <input type="password" inputMode="numeric" maxLength={8} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} placeholder="••••" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-center tracking-widest" />
+              </div>
+              <p className="sm:col-span-2 text-xs text-slate-400">
+                {form.language === 'ar'
+                  ? 'اترك حقلي الرمز فارغين للاحتفاظ بالرمز الحالي. الاستعادة مرتبطة بالبريد الإلكتروني الرسمي أعلاه.'
+                  : 'Leave both fields empty to keep the current code. Recovery is linked to the official email above.'}
+              </p>
+              {securityMessage && <p className="sm:col-span-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">{securityMessage}</p>}
+            </div>
+          </div>
+
+          {/* 4. Moroccan Payroll Rules */}
           <div className="pt-3 border-t border-slate-800">
             <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Receipt className="w-4 h-4" />

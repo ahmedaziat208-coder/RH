@@ -15,6 +15,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { PayrollSlip } from './types';
 import { checkHealthCardStatus, getCurrentMonth } from './utils/formatters';
 import { getTranslation } from './i18n/translations';
+import { LoginGate } from './components/LoginGate';
 
 export default function App() {
   const [dbState, setDbState] = useState<DatabaseState>(databest.getState());
@@ -24,6 +25,7 @@ export default function App() {
   const [selectedSlipForPrint, setSelectedSlipForPrint] = useState<PayrollSlip | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [openAddEmployeeFlag, setOpenAddEmployeeFlag] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(() => sessionStorage.getItem('RH_UNLOCKED') === '1');
 
   // Sync HTML lang and dir with system language
   useEffect(() => {
@@ -96,6 +98,17 @@ export default function App() {
   };
 
   const t = getTranslation(dbState.settings.language);
+
+  if (!isUnlocked) {
+    return (
+      <LoginGate
+        restaurantName={dbState.settings.restaurantName}
+        recoveryEmail={dbState.settings.email}
+        language={dbState.settings.language}
+        onUnlocked={() => setIsUnlocked(true)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans" dir={t.dir}>
