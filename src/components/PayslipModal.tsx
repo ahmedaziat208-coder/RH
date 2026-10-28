@@ -287,19 +287,19 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
 
             <div className="border border-slate-300 rounded-xl overflow-hidden">
               <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 flex justify-between items-center">
-                <span className="font-bold text-xs text-slate-800">الخصومات</span>
+                <span className="font-bold text-xs text-slate-800">خصم التسبيق فقط</span>
                 <span className="text-[11px] text-slate-500">المبلغ ({settings.currencySymbol})</span>
               </div>
               <table className="w-full text-xs">
                 <tbody className="divide-y divide-slate-200">
                   <tr className="hover:bg-slate-50">
-                    <td className="p-2 text-slate-700">التسبيق</td>
-                    <td className="p-2 font-mono text-rose-700 text-left font-bold">{formatCurrency(slip.advancesDeducted, '')}</td>
+                    <td className="p-2 text-slate-700">مبلغ التسبيق المخصوم</td>
+                    <td className="p-2 font-mono text-rose-700 text-left font-bold">{formatCurrency(slip.advancesDeducted, settings.currencySymbol)}</td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-100/90 border-t-2 border-slate-300 font-bold">
-                    <td className="p-2.5 text-slate-900">مجموع الخصومات</td>
+                    <td className="p-2.5 text-slate-900">إجمالي خصم التسبيق</td>
                     <td className="p-2.5 font-mono text-left text-sm text-rose-800">
                       {formatCurrency(slip.advancesDeducted, settings.currencySymbol)}
                     </td>
