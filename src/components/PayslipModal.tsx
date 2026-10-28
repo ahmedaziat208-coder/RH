@@ -301,7 +301,7 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
                   <tr className="bg-slate-100/90 border-t-2 border-slate-300 font-bold">
                     <td className="p-2.5 text-slate-900">مجموع الخصومات</td>
                     <td className="p-2.5 font-mono text-left text-sm text-rose-800">
-                      {formatCurrency(slip.totalDeductions, settings.currencySymbol)}
+                      {formatCurrency(slip.advancesDeducted, settings.currencySymbol)}
                     </td>
                   </tr>
                 </tfoot>
@@ -314,7 +314,7 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
               هذه قسيمة محفوظة من قبل تطبيق معادلة الرواتب الحالية. تم الإبقاء على المبالغ التاريخية دون إعادة احتسابها.
               <div className="mt-2 text-xs">
                 الإجمالي المحفوظ: {formatCurrency(slip.totalGrossSalary, settings.currencySymbol)} •
-                الخصومات المحفوظة: {formatCurrency(slip.totalDeductions, settings.currencySymbol)}
+                خصم التسبيق المحفوظ: {formatCurrency(slip.advancesDeducted, settings.currencySymbol)}
               </div>
             </div>
           )}
