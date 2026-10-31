@@ -325,7 +325,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                 <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">الغياب</th>
                 <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">Double Shift</th>
                 <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">عمل يوم الراحة</th>
-                <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5 text-amber-300">الراتب الصافي</th>
+                <th className="sticky top-0 z-20 border-b border-slate-500 bg-[#cfcfcf] p-3.5 text-slate-950">الراتب الصافي</th>
                 <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5 text-center">إجراءات</th>
               </tr>
             </thead>
@@ -462,11 +462,11 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                     </td>
 
                     {/* Net salary */}
-                    <td className="p-3.5 font-mono font-black text-amber-300 text-sm">
+                    <td className="bg-[#cfcfcf] p-3.5 font-mono font-black text-slate-950 text-sm">
                       {formatCurrency(slip.netSalary, settings.currencySymbol)}
                       <span className={`block text-[10px] font-bold ${
-                        !usesCurrentFormula ? 'text-slate-400' :
-                        slip.status === 'PAID' ? 'text-emerald-400' : 'text-amber-400'
+                        !usesCurrentFormula ? 'text-slate-600' :
+                        slip.status === 'PAID' ? 'text-emerald-700' : 'text-slate-800'
                       }`}>
                         {!usesCurrentFormula
                           ? 'أرشيف بالحساب السابق'
