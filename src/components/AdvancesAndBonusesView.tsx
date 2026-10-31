@@ -7,7 +7,7 @@ import {
   Clock, 
   AlertTriangle, 
   Trash2, 
-  Award, 
+  Award,
   Sparkles,
   TrendingDown,
   TrendingUp,
@@ -171,48 +171,22 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
       <div className="bg-slate-850 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
           <button
-            onClick={() => setSubTab('advances')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${
-              subTab === 'advances'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            type="button"
+            className="px-4 py-2 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-md flex items-center gap-2"
           >
             <HandCoins className="w-4 h-4" />
-            <span>السلفيات والتسبيقات (Acomptes)</span>
-          </button>
-
-          <button
-            onClick={() => setSubTab('adjustments')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${
-              subTab === 'adjustments'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Award className="w-4 h-4" />
-            <span>المكافآت والبدلات والخصومات</span>
+            <span>السلفيات</span>
           </button>
         </div>
 
         <div>
-          {subTab === 'advances' ? (
-            <button
-              onClick={openAddAdvance}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 transition-all flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 active:scale-95 cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>تسجيل طلب تسبيق جديد</span>
-            </button>
-          ) : (
-            <button
-              onClick={openAddAdjustment}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 transition-all flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 active:scale-95 cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>إضافة مكافأة أو خصم</span>
-            </button>
-          )}
+          <button
+            onClick={openAddAdvance}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 transition-all flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 active:scale-95 cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>تسجيل طلب سلفة جديد</span>
+          </button>
         </div>
       </div>
 
