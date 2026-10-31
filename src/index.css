@@ -26,6 +26,19 @@
   opacity: 0.65;
 }
 
+#printable-payslip,
+#printable-payslip * {
+  color: #0f172a !important;
+}
+
+#printable-payslip .text-emerald-700 {
+  color: #047857 !important;
+}
+
+#printable-payslip .text-rose-700 {
+  color: #be123c !important;
+}
+
 .app-background::before {
   content: "";
   position: fixed;

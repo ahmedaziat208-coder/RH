@@ -62,22 +62,15 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
         scrollX: 0,
         scrollY: 0,
         onclone: clonedDocument => {
-          const sourceElements = element.querySelectorAll('*');
           const clonedElements = clonedDocument.getElementById('printable-payslip')?.querySelectorAll('*');
           if (!clonedElements) return;
 
-          sourceElements.forEach((sourceElement, index) => {
-            const clonedElement = clonedElements[index] as HTMLElement | undefined;
-            if (!(sourceElement instanceof HTMLElement) || !clonedElement) return;
-
-            const styles = window.getComputedStyle(sourceElement);
-            const normalizedBackground = styles.backgroundColor;
-            if (normalizedBackground && normalizedBackground !== 'rgba(0, 0, 0, 0)') {
-              clonedElement.style.backgroundColor = normalizedBackground;
-            }
-            clonedElement.style.color = styles.color;
-            clonedElement.style.borderColor = styles.borderColor;
+          clonedElements.forEach(clonedElement => {
+            const elementWithStyle = clonedElement as HTMLElement;
+            elementWithStyle.style.color = '#0f172a';
           });
+          const clonedPayslip = clonedDocument.getElementById('printable-payslip') as HTMLElement | null;
+          if (clonedPayslip) clonedPayslip.style.color = '#0f172a';
         },
       });
 
