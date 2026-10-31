@@ -69,6 +69,9 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
             const elementWithStyle = clonedElement as HTMLElement;
             elementWithStyle.style.color = '#0f172a';
           });
+          clonedDocument.querySelectorAll('.payslip-document-title').forEach(titleElement => {
+            (titleElement as HTMLElement).style.color = '#ffffff';
+          });
           const clonedPayslip = clonedDocument.getElementById('printable-payslip') as HTMLElement | null;
           if (clonedPayslip) clonedPayslip.style.color = '#0f172a';
         },
@@ -236,7 +239,7 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
 
               {/* Document Title & Period */}
               <div className="text-left shrink-0">
-                <div className="inline-block bg-slate-900 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold tracking-wide">
+                <div className="payslip-document-title inline-block bg-slate-900 text-white px-3.5 py-1.5 rounded-lg text-sm font-bold tracking-wide">
                   بيان الراتب • PAYROLL STATEMENT
                 </div>
                 <div className="mt-2 text-xs font-semibold text-slate-800">

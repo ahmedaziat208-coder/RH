@@ -31,6 +31,10 @@
   color: #0f172a !important;
 }
 
+#printable-payslip .payslip-document-title {
+  color: #ffffff !important;
+}
+
 #printable-payslip .text-emerald-700 {
   color: #047857 !important;
 }
