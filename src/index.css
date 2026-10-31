@@ -6,6 +6,25 @@
   }
 }
 
+.app-background {
+  position: relative;
+  isolation: isolate;
+  background: rgba(15, 23, 42, 0.92);
+}
+
+.app-background::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.88)),
+    url('/app-background.jpg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
 /* Custom scrollbar for modern dashboards */
 ::-webkit-scrollbar {
   width: 6px;

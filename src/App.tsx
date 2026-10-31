@@ -116,7 +116,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans" dir={t.dir}>
+    <div className="app-background min-h-screen text-slate-100 flex flex-col font-sans" dir={t.dir}>
       
       {/* Top Application Header */}
       <Header

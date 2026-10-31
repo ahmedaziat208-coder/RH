@@ -85,7 +85,7 @@ export const LoginGate: React.FC<LoginGateProps & { onUnlocked: () => void }> = 
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4" dir={isArabic ? 'rtl' : 'ltr'}>
+    <div className="app-background min-h-screen flex items-center justify-center p-4" dir={isArabic ? 'rtl' : 'ltr'}>
       <div className="w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
         <div className="bg-gradient-to-br from-amber-500/20 to-slate-900 px-7 py-8 text-center border-b border-slate-800">
           <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/20">
