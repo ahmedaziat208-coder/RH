@@ -215,9 +215,6 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
                     <h2 className="text-xl font-black tracking-tight text-slate-950 font-sans">
                       OBAYOLI RESTAURANT MAROC
                     </h2>
-                    <p className="text-xs font-bold text-slate-700">
-                      {settings.restaurantName} • {settings.country}
-                    </p>
                   </div>
                 </div>
                 <p className="text-xs text-slate-600">
