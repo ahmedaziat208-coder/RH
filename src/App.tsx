@@ -60,6 +60,11 @@ export default function App() {
 
   const currentMonth = getCurrentMonth();
   const currentRun = dbState.payrollRuns.find(r => r.month === currentMonth) || dbState.payrollRuns[0];
+  const selectedSlip = selectedSlipForPrint
+    ? dbState.payrollSlips.find(slip => slip.id === selectedSlipForPrint.id)
+      ?? dbState.payrollArchives.flatMap(archive => archive.slips).find(slip => slip.id === selectedSlipForPrint.id)
+      ?? selectedSlipForPrint
+    : null;
 
   // Actions
   const handleOpenNewEmployee = () => {
@@ -241,7 +246,7 @@ export default function App() {
 
       {/* Official Printable Payslip Modal */}
       <PayslipModal
-        slip={selectedSlipForPrint}
+        slip={selectedSlip}
         settings={dbState.settings}
         onClose={() => setSelectedSlipForPrint(null)}
         onStatusChange={(id, status) => {

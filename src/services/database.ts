@@ -673,6 +673,57 @@ function performAutomaticPayrollRollover(state: DatabaseState): DatabaseState {
   return state;
 }
 
+function syncEmployeeReferences(state: DatabaseState): DatabaseState {
+  const employeesById = new Map(state.employees.map(employee => [employee.id, employee]));
+
+  state.payrollSlips = state.payrollSlips.map(slip => {
+    const employee = employeesById.get(slip.employeeId);
+    return employee ? {
+      ...slip,
+      employeeName: employee.fullName,
+      employeeMatricule: employee.matricule,
+      cin: employee.cin,
+      cnssNumber: employee.cnssNumber,
+      roleTitle: employee.roleTitle,
+      station: employee.station,
+      contractType: employee.contractType,
+      salaryType: employee.salaryType,
+    } : slip;
+  });
+
+  state.payrollArchives = state.payrollArchives.map(archive => ({
+    ...archive,
+    slips: archive.slips.map(slip => {
+      const employee = employeesById.get(slip.employeeId);
+      return employee ? {
+        ...slip,
+        employeeName: employee.fullName,
+        employeeMatricule: employee.matricule,
+        cin: employee.cin,
+        cnssNumber: employee.cnssNumber,
+        roleTitle: employee.roleTitle,
+        station: employee.station,
+        contractType: employee.contractType,
+        salaryType: employee.salaryType,
+      } : slip;
+    }),
+  }));
+
+  state.tipsPools = state.tipsPools.map(pool => ({
+    ...pool,
+    shares: pool.shares.map(share => {
+      const employee = employeesById.get(share.employeeId);
+      return employee ? {
+        ...share,
+        employeeName: employee.fullName,
+        role: employee.roleTitle,
+      } : share;
+    }),
+  }));
+
+  return state;
+}
+
 class DatabaseManager {
   private state: DatabaseState;
   private listeners: Set<() => void> = new Set();
@@ -681,7 +732,7 @@ class DatabaseManager {
   private cloudSyncQueued = false;
 
   constructor() {
-    this.state = performAutomaticPayrollRollover(this.loadFromStorage());
+    this.state = syncEmployeeReferences(performAutomaticPayrollRollover(this.loadFromStorage()));
     this.saveToStorage(this.state);
     void this.loadCloudState();
   }
@@ -751,7 +802,7 @@ class DatabaseManager {
     state.annualLeaveRecords = Array.isArray(state.annualLeaveRecords) ? state.annualLeaveRecords : [];
     state.version = 8;
     state.payrollArchives = Array.isArray(state.payrollArchives) ? state.payrollArchives : [];
-    this.state = performAutomaticPayrollRollover(removeDemoData(state));
+    this.state = syncEmployeeReferences(performAutomaticPayrollRollover(removeDemoData(state)));
     this.cloudRevision = revision;
     this.saveToStorage(this.state);
     this.listeners.forEach(listener => listener());
@@ -899,10 +950,10 @@ class DatabaseManager {
     const updatedEmployee = this.state.employees.find(e => e.id === id);
     if (updatedEmployee) {
       this.state.payrollSlips = this.state.payrollSlips.map(slip => {
-        if (slip.employeeId !== id || slip.status === 'PAID') return slip;
+        if (slip.employeeId !== id) return slip;
 
         const run = this.state.payrollRuns.find(item => item.month === slip.month);
-        if (run?.status === 'PAID') return slip;
+        const shouldRecalculate = slip.status !== 'PAID' && run?.status !== 'PAID';
 
         const updatedSlip = {
           ...slip,
@@ -916,8 +967,39 @@ class DatabaseManager {
           salaryType: updatedEmployee.salaryType,
           baseSalary: updatedEmployee.baseSalary,
         };
-        return recalculateSlipAmounts(updatedSlip, this.state.settings);
+        return shouldRecalculate
+          ? recalculateSlipAmounts(updatedSlip, this.state.settings)
+          : updatedSlip;
       });
+
+      this.state.payrollArchives = this.state.payrollArchives.map(archive => ({
+        ...archive,
+        slips: archive.slips.map(slip => {
+          if (slip.employeeId !== id) return slip;
+          return {
+            ...slip,
+            employeeName: updatedEmployee.fullName,
+            employeeMatricule: updatedEmployee.matricule,
+            cin: updatedEmployee.cin,
+            cnssNumber: updatedEmployee.cnssNumber,
+            roleTitle: updatedEmployee.roleTitle,
+            station: updatedEmployee.station,
+            contractType: updatedEmployee.contractType,
+            salaryType: updatedEmployee.salaryType,
+          };
+        }),
+      }));
+
+      this.state.tipsPools = this.state.tipsPools.map(pool => ({
+        ...pool,
+        shares: pool.shares.map(share => share.employeeId === id
+          ? {
+              ...share,
+              employeeName: updatedEmployee.fullName,
+              role: updatedEmployee.roleTitle,
+            }
+          : share),
+      }));
     }
 
     this.notify();
