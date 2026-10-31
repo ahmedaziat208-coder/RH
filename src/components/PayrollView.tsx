@@ -255,29 +255,29 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
 
       {/* Payroll summary */}
       {currentRun && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gradient-to-r from-slate-850 to-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
-          <div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-2xl p-0">
+          <div className="min-h-24 rounded-2xl border border-sky-400/30 bg-sky-900/85 px-4 py-3 shadow-lg shadow-sky-950/20">
             <span className="text-[11px] text-slate-400 block font-medium">عدد الموظفين:</span>
             <span className="text-xl font-bold font-mono text-white mt-1 block">
               {currentRun.totalEmployees} موظف
             </span>
           </div>
 
-          <div>
+          <div className="min-h-24 rounded-2xl border border-teal-400/30 bg-teal-900/85 px-4 py-3 shadow-lg shadow-teal-950/20">
             <span className="text-[11px] text-slate-400 block font-medium">إجمالي الرواتب الشهرية:</span>
             <span className="text-xl font-bold font-mono text-slate-200 mt-1 block">
               {formatCurrency(currentSlips.reduce((sum, slip) => sum + slip.baseSalary, 0), settings.currencySymbol)}
             </span>
           </div>
 
-          <div>
+          <div className="min-h-24 rounded-2xl border border-rose-400/30 bg-rose-900/85 px-4 py-3 shadow-lg shadow-rose-950/20">
             <span className="text-[11px] text-slate-400 block font-medium">خصم التسبيق فقط:</span>
             <span className="text-xl font-bold font-mono text-rose-400 mt-1 block">
               {formatCurrency(currentSlips.reduce((sum, slip) => sum + slip.advancesDeducted, 0), settings.currencySymbol)}
             </span>
           </div>
 
-          <div className="col-span-2 sm:col-span-1 border-t sm:border-t-0 sm:border-r border-slate-800 pt-2 sm:pt-0 sm:pr-3">
+          <div className="col-span-2 sm:col-span-1 min-h-24 rounded-2xl border border-amber-400/30 bg-amber-900/85 px-4 py-3 shadow-lg shadow-amber-950/20">
             <span className="text-[11px] text-amber-300 block font-bold">إجمالي الراتب الصافي:</span>
             <span className="text-2xl font-black font-mono text-amber-400 mt-0.5 block">
               {formatCurrency(currentRun.totalNet, settings.currencySymbol)}
