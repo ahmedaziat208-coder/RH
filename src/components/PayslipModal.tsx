@@ -24,9 +24,10 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
   onClose,
   onStatusChange,
 }) => {
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
   if (!slip) return null;
 
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const stationMeta = getStationMeta(slip.station);
   const contractMeta = getContractLabel(slip.contractType);
   const dailySalary = slip.baseSalary / 26;
@@ -41,19 +42,43 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
     setIsExportingPdf(true);
     try {
       const element = document.getElementById('printable-payslip');
-      if (!element) return;
+      if (!element) {
+        throw new Error('Printable payslip element was not found');
+      }
 
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf'),
       ]);
+      if (document.fonts?.ready) await document.fonts.ready;
+
       const canvas = await html2canvas(element, {
         backgroundColor: '#ffffff',
-        scale: 3,
+        scale: 2,
         useCORS: true,
         logging: false,
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        onclone: clonedDocument => {
+          const sourceElements = element.querySelectorAll('*');
+          const clonedElements = clonedDocument.getElementById('printable-payslip')?.querySelectorAll('*');
+          if (!clonedElements) return;
+
+          sourceElements.forEach((sourceElement, index) => {
+            const clonedElement = clonedElements[index] as HTMLElement | undefined;
+            if (!(sourceElement instanceof HTMLElement) || !clonedElement) return;
+
+            const styles = window.getComputedStyle(sourceElement);
+            const normalizedBackground = styles.backgroundColor;
+            if (normalizedBackground && normalizedBackground !== 'rgba(0, 0, 0, 0)') {
+              clonedElement.style.backgroundColor = normalizedBackground;
+            }
+            clonedElement.style.color = styles.color;
+            clonedElement.style.borderColor = styles.borderColor;
+          });
+        },
       });
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
@@ -86,7 +111,27 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
       pdf.save(`Payslip-${safeName}-${slip.month}.pdf`);
     } catch (error) {
       console.error('Failed to export payslip PDF:', error);
-      window.alert('تعذر إنشاء ملف PDF. حاول مرة أخرى.');
+      try {
+        const { jsPDF } = await import('jspdf');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+        pdf.setProperties({ title: `Payslip ${slip.employeeName} ${slip.month}` });
+        pdf.setFontSize(16);
+        pdf.text('OBAYOLI - PAYSLIP', 105, 20, { align: 'center' });
+        pdf.setFontSize(11);
+        [
+          ['Employee ID', slip.employeeId],
+          ['Registration', slip.employeeMatricule],
+          ['Month', slip.month],
+          ['Base salary', String(slip.baseSalary)],
+          ['Net salary', String(slip.netSalary)],
+        ].forEach(([label, value], index) => {
+          pdf.text(`${label}: ${value}`, 20, 40 + index * 10);
+        });
+        pdf.save(`Payslip-${slip.employeeMatricule || slip.employeeId}-${slip.month}.pdf`);
+      } catch (fallbackError) {
+        console.error('Payslip PDF fallback also failed:', fallbackError);
+        window.alert('تعذر إنشاء ملف PDF. تحقق من صلاحيات التنزيل في المتصفح وحاول مرة أخرى.');
+      }
     } finally {
       setIsExportingPdf(false);
     }

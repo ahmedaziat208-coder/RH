@@ -895,6 +895,31 @@ class DatabaseManager {
     this.state.employees = this.state.employees.map(e =>
       e.id === id ? { ...e, ...updates } : e
     );
+
+    const updatedEmployee = this.state.employees.find(e => e.id === id);
+    if (updatedEmployee) {
+      this.state.payrollSlips = this.state.payrollSlips.map(slip => {
+        if (slip.employeeId !== id || slip.status === 'PAID') return slip;
+
+        const run = this.state.payrollRuns.find(item => item.month === slip.month);
+        if (run?.status === 'PAID') return slip;
+
+        const updatedSlip = {
+          ...slip,
+          employeeName: updatedEmployee.fullName,
+          employeeMatricule: updatedEmployee.matricule,
+          cin: updatedEmployee.cin,
+          cnssNumber: updatedEmployee.cnssNumber,
+          roleTitle: updatedEmployee.roleTitle,
+          station: updatedEmployee.station,
+          contractType: updatedEmployee.contractType,
+          salaryType: updatedEmployee.salaryType,
+          baseSalary: updatedEmployee.baseSalary,
+        };
+        return recalculateSlipAmounts(updatedSlip, this.state.settings);
+      });
+    }
+
     this.notify();
   }
 
