@@ -14,12 +14,12 @@
 
 .app-background,
 .app-background * {
-  color: #000 !important;
+  color: #fff !important;
 }
 
 .app-background input::placeholder,
 .app-background textarea::placeholder {
-  color: #000 !important;
+  color: #fff !important;
   opacity: 0.65;
 }
 
