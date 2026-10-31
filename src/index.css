@@ -9,7 +9,10 @@
 .app-background {
   position: relative;
   isolation: isolate;
-  background: #d9dde2;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.12), transparent 32rem),
+    radial-gradient(circle at 88% 12%, rgba(129, 140, 248, 0.10), transparent 28rem),
+    linear-gradient(135deg, #111827 0%, #172033 48%, #1e293b 100%);
 }
 
 .app-background,
@@ -29,7 +32,10 @@
   inset: 0;
   z-index: -2;
   background-image: none;
-  background-color: #d9dde2;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.12), transparent 32rem),
+    radial-gradient(circle at 88% 12%, rgba(129, 140, 248, 0.10), transparent 28rem),
+    linear-gradient(135deg, #111827 0%, #172033 48%, #1e293b 100%);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
