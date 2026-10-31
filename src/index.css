@@ -26,6 +26,11 @@
   opacity: 0.65;
 }
 
+.net-payroll-column,
+.net-payroll-column * {
+  color: #000000 !important;
+}
+
 #printable-payslip,
 #printable-payslip * {
   color: #0f172a !important;

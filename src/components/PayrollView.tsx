@@ -325,7 +325,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                 <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">الغياب</th>
                 <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">Double Shift</th>
                 <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5">عمل يوم الراحة</th>
-                <th className="sticky top-0 z-20 border-b border-slate-500 bg-[#ffff00] p-3.5 text-slate-950">الراتب الصافي</th>
+                <th className="net-payroll-column sticky top-0 z-20 border-b border-slate-500 bg-[#ffff00] p-3.5">الراتب الصافي</th>
                 <th className="sticky top-0 z-20 border-b border-slate-800 bg-slate-900 p-3.5 text-center">إجراءات</th>
               </tr>
             </thead>
@@ -462,7 +462,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                     </td>
 
                     {/* Net salary */}
-                    <td className="bg-[#ffff00] p-3.5 font-mono font-black text-slate-950 text-sm">
+                    <td className="net-payroll-column bg-[#ffff00] p-3.5 font-mono font-black text-sm">
                       {formatCurrency(slip.netSalary, settings.currencySymbol)}
                       <span className="block text-[10px] font-bold text-black">
                         {!usesCurrentFormula
