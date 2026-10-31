@@ -9,7 +9,7 @@
 .app-background {
   position: relative;
   isolation: isolate;
-  background: transparent;
+  background: #d9dde2;
 }
 
 .app-background,
@@ -28,7 +28,8 @@
   position: fixed;
   inset: 0;
   z-index: -2;
-  background-image: url('/app-background.jpg');
+  background-image: none;
+  background-color: #d9dde2;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
