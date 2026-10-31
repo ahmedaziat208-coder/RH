@@ -464,10 +464,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({
                     {/* Net salary */}
                     <td className="bg-[#ffff00] p-3.5 font-mono font-black text-slate-950 text-sm">
                       {formatCurrency(slip.netSalary, settings.currencySymbol)}
-                      <span className={`block text-[10px] font-bold ${
-                        !usesCurrentFormula ? 'text-slate-600' :
-                        slip.status === 'PAID' ? 'text-emerald-700' : 'text-slate-800'
-                      }`}>
+                      <span className="block text-[10px] font-bold text-black">
                         {!usesCurrentFormula
                           ? 'أرشيف بالحساب السابق'
                           : slip.status === 'PAID' ? 'تم الصرف' : 'مسودة'}
