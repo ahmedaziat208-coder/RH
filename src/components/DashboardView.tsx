@@ -108,31 +108,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     },
   ];
 
-  const colorClasses: Record<string, { icon: string; border: string; count: string }> = {
+  const colorClasses: Record<string, { icon: string; border: string; count: string; card: string }> = {
     amber: {
       icon: 'bg-amber-500/10 text-amber-400',
       border: 'hover:border-amber-500/30',
       count: 'text-amber-400',
+      card: 'border-amber-500/25 bg-amber-950/70 shadow-amber-950/20',
     },
     emerald: {
       icon: 'bg-emerald-500/10 text-emerald-400',
       border: 'hover:border-emerald-500/30',
       count: 'text-emerald-400',
+      card: 'border-emerald-500/25 bg-emerald-950/70 shadow-emerald-950/20',
     },
     cyan: {
       icon: 'bg-cyan-500/10 text-cyan-400',
       border: 'hover:border-cyan-500/30',
       count: 'text-cyan-400',
+      card: 'border-cyan-500/25 bg-cyan-950/70 shadow-cyan-950/20',
     },
     purple: {
       icon: 'bg-purple-500/10 text-purple-400',
       border: 'hover:border-purple-500/30',
       count: 'text-purple-400',
+      card: 'border-purple-500/25 bg-purple-950/70 shadow-purple-950/20',
     },
     blue: {
       icon: 'bg-blue-500/10 text-blue-400',
       border: '',
       count: 'text-blue-400',
+      card: 'border-blue-500/25 bg-blue-950/70 shadow-blue-950/20',
     },
   };
 
@@ -148,7 +153,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           return (
             <article
               key={metric.label}
-              className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-850 p-4"
+              className={`flex items-center justify-between rounded-2xl border p-4 shadow-lg ${colors.card}`}
             >
               <div>
                 <span className="block text-xs font-medium text-slate-400">{metric.label}</span>
@@ -189,7 +194,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               return (
                 <article
                   key={department.title}
-                  className={`rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors ${colors.border}`}
+                  className={`rounded-xl border p-4 transition-colors shadow-md ${colors.card} ${colors.border}`}
                 >
                   <div className="mb-2 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
