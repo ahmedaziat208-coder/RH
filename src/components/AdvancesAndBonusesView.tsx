@@ -113,7 +113,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
         deductionMonth: advMonth,
         installmentMonths: advInstallments,
         status: 'APPROVED',
-        reason: advReason || 'تسبيق على الراتب',
+        reason: advReason || 'سلفة على الراتب',
         approvedBy: settings.restaurantManager,
       });
     }
@@ -290,7 +290,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
                           {/* زر التعديل */}
                           <button
                             onClick={() => openEditAdvance(adv)}
-                            title="تعديل بيانات التسبيق والمبلغ"
+                            title="تعديل بيانات السلفة والمبلغ"
                             className="px-2 py-1 rounded-md text-[11px] font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30 transition-all flex items-center gap-1 cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -300,7 +300,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
                           {/* زر الحذف */}
                           <button
                             onClick={() => {
-                              if (confirm(`هل أنت متأكد من حذف هذا التسبيق بمبلغ ${adv.amount} د.م للموظف "${emp?.fullName}"؟`)) {
+                              if (confirm(`هل أنت متأكد من حذف هذه السلفة بمبلغ ${adv.amount} د.م للموظف "${emp?.fullName}"؟`)) {
                                 onDeleteAdvance(adv.id);
                               }
                             }}
@@ -498,6 +498,9 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
                 <p className="mt-2 rounded-lg bg-slate-950/40 px-3 py-2 text-amber-300">
                   المبلغ المقتطع شهرياً: <strong>{formatCurrency(advAmount / advInstallments, settings.currencySymbol)}</strong>
                 </p>
+                <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                  سيتم اقتطاع هذا المبلغ شهرياً ابتداءً من {advMonth || 'الشهر المحدد'} لمدة {advInstallments} {advInstallments === 1 ? 'شهر' : 'أشهر'}.
+                </p>
               </div>
 
               <div>
@@ -523,7 +526,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
                   type="submit"
                   className="px-5 py-2 rounded-xl font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 cursor-pointer"
                 >
-                  {editingAdvance ? 'حفظ تعديل التسبيق' : 'اعتماد التسبيق الآن'}
+                  {editingAdvance ? 'حفظ تعديل السلفة' : 'اعتماد السلفة الآن'}
                 </button>
               </div>
             </form>
