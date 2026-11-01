@@ -730,6 +730,7 @@ class DatabaseManager {
   private cloudRevision: number | null = null;
   private cloudSyncInProgress = false;
   private cloudSyncQueued = false;
+  private cloudSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.state = syncEmployeeReferences(performAutomaticPayrollRollover(this.loadFromStorage()));
@@ -868,7 +869,11 @@ class DatabaseManager {
   private notify(): void {
     this.saveToStorage(this.state);
     this.listeners.forEach(fn => fn());
-    void this.syncCloudState();
+    if (this.cloudSyncTimer !== null) clearTimeout(this.cloudSyncTimer);
+    this.cloudSyncTimer = setTimeout(() => {
+      this.cloudSyncTimer = null;
+      void this.syncCloudState();
+    }, 500);
   }
 
   // Getters
