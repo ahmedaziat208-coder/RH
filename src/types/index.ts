@@ -80,6 +80,9 @@ export interface AnnualLeaveRecord {
   year: number;
   entitlementDays: number;
   usedDays: number;
+  holidaySelections?: string[];
+  religiousHolidayDays?: number;
+  nationalHolidayDays?: number;
 }
 
 export type AdvanceStatus = 'PENDING' | 'APPROVED' | 'DEDUCTED' | 'REJECTED';

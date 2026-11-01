@@ -56,6 +56,9 @@ function formatIsoDate(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 }
 
+const getCalendarHolidayKey = (holiday: CalendarHoliday) =>
+  `${holiday.date}|${holiday.category ?? 'OTHER'}`;
+
 function getAnnualHolidayCalendar(year: number, t: TranslationDictionary): CalendarHoliday[] {
   const nationalHolidays = NATIONAL_HOLIDAYS.map(holiday => ({
     name: t[holiday.nameKey],
@@ -129,6 +132,7 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
   const [leaveEmployeeId, setLeaveEmployeeId] = useState('');
   const [entitlementDays, setEntitlementDays] = useState('');
   const [usedDays, setUsedDays] = useState('');
+  const [selectedHolidayKeys, setSelectedHolidayKeys] = useState<string[]>([]);
   const currentYear = Number(getCurrentDateString().slice(0, 4));
   const [yearInput, setYearInput] = useState(String(currentYear));
   const yearValue = Number(yearInput);
@@ -199,17 +203,40 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
       year,
       entitlementDays: entitled,
       usedDays: used,
+      holidaySelections: selectedHolidayKeys,
+      religiousHolidayDays: annualHolidays.filter(holiday =>
+        holiday.category === 'RELIGIOUS' && selectedHolidayKeys.includes(getCalendarHolidayKey(holiday))
+      ).length,
+      nationalHolidayDays: annualHolidays.filter(holiday =>
+        holiday.category === 'NATIONAL' && selectedHolidayKeys.includes(getCalendarHolidayKey(holiday))
+      ).length,
     });
     setLeaveEmployeeId('');
     setEntitlementDays('');
     setUsedDays('');
+    setSelectedHolidayKeys([]);
   };
 
   const editAnnualLeaveRecord = (record: AnnualLeaveRecord) => {
     setLeaveEmployeeId(record.employeeId);
     setEntitlementDays(String(record.entitlementDays));
     setUsedDays(String(record.usedDays));
+    setSelectedHolidayKeys(record.holidaySelections ?? []);
   };
+
+  const toggleAnnualHoliday = (holiday: CalendarHoliday) => {
+    const key = getCalendarHolidayKey(holiday);
+    setSelectedHolidayKeys(current =>
+      current.includes(key) ? current.filter(item => item !== key) : [...current, key]
+    );
+  };
+
+  const selectedReligiousHolidays = annualHolidays.filter(holiday =>
+    holiday.category === 'RELIGIOUS' && selectedHolidayKeys.includes(getCalendarHolidayKey(holiday))
+  );
+  const selectedNationalHolidays = annualHolidays.filter(holiday =>
+    holiday.category === 'NATIONAL' && selectedHolidayKeys.includes(getCalendarHolidayKey(holiday))
+  );
 
   const isHolidayAdded = (holiday: CalendarHoliday) =>
     holidays.some(saved => saved.date === holiday.date && saved.category === holiday.category);
@@ -305,6 +332,15 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
               onChange={event => {
                 const value = event.target.value;
                 if (value === '' || /^\d{1,4}$/.test(value)) setYearInput(value);
+                if (leaveEmployeeId && /^\d{4}$/.test(value)) {
+                  const recordYear = Number(value);
+                  const existing = annualLeaveRecords.find(record =>
+                    record.employeeId === leaveEmployeeId && record.year === recordYear
+                  );
+                  setEntitlementDays(existing ? String(existing.entitlementDays) : '');
+                  setUsedDays(existing ? String(existing.usedDays) : '');
+                  setSelectedHolidayKeys(existing?.holidaySelections ?? []);
+                }
               }}
               className="w-24 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-center text-white outline-none focus:border-amber-500"
             />
@@ -487,7 +523,16 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
             <select
               required
               value={leaveEmployeeId}
-              onChange={event => setLeaveEmployeeId(event.target.value)}
+              onChange={event => {
+                const employeeId = event.target.value;
+                setLeaveEmployeeId(employeeId);
+                const existing = annualLeaveRecords.find(record =>
+                  record.employeeId === employeeId && record.year === year
+                );
+                setEntitlementDays(existing ? String(existing.entitlementDays) : '');
+                setUsedDays(existing ? String(existing.usedDays) : '');
+                setSelectedHolidayKeys(existing?.holidaySelections ?? []);
+              }}
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
             >
               <option value="">{t.holidaySelectEmployee}</option>
@@ -520,6 +565,58 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500"
             />
           </label>
+          <div className="md:col-span-3 grid grid-cols-1 gap-3 rounded-xl border border-slate-700/70 bg-slate-950/30 p-4 xl:grid-cols-2">
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-bold text-violet-300">
+                العطل الدينية
+                <span className="mr-2 rounded-full bg-violet-500/15 px-2 py-0.5 font-mono text-violet-200">
+                  {selectedReligiousHolidays.length} يوم
+                </span>
+              </legend>
+              <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
+                {annualHolidays.filter(holiday => holiday.category === 'RELIGIOUS').map(holiday => {
+                  const key = getCalendarHolidayKey(holiday);
+                  return (
+                    <label key={key} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-300 hover:bg-slate-800/60">
+                      <input
+                        type="checkbox"
+                        checked={selectedHolidayKeys.includes(key)}
+                        onChange={() => toggleAnnualHoliday(holiday)}
+                        className="mt-0.5 accent-violet-500"
+                      />
+                      <span>{holiday.name}</span>
+                      <span className="mr-auto font-mono text-[11px] text-slate-500" dir="ltr">{holiday.date}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-bold text-sky-300">
+                العطل الوطنية
+                <span className="mr-2 rounded-full bg-sky-500/15 px-2 py-0.5 font-mono text-sky-200">
+                  {selectedNationalHolidays.length} يوم
+                </span>
+              </legend>
+              <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
+                {annualHolidays.filter(holiday => holiday.category === 'NATIONAL').map(holiday => {
+                  const key = getCalendarHolidayKey(holiday);
+                  return (
+                    <label key={key} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-300 hover:bg-slate-800/60">
+                      <input
+                        type="checkbox"
+                        checked={selectedHolidayKeys.includes(key)}
+                        onChange={() => toggleAnnualHoliday(holiday)}
+                        className="mt-0.5 accent-sky-500"
+                      />
+                      <span>{holiday.name}</span>
+                      <span className="mr-auto font-mono text-[11px] text-slate-500" dir="ltr">{holiday.date}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          </div>
           <div className="md:col-span-3 flex justify-end">
             <button
               type="submit"
@@ -542,6 +639,8 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
                   <th className="px-5 py-3 font-semibold">{t.holidayEmployee}</th>
                   <th className="px-5 py-3 font-semibold">{t.holidayEntitlementDays}</th>
                   <th className="px-5 py-3 font-semibold">{t.holidayUsedDays}</th>
+                  <th className="px-5 py-3 font-semibold text-violet-300">العطل الدينية</th>
+                  <th className="px-5 py-3 font-semibold text-sky-300">العطل الوطنية</th>
                   <th className="px-5 py-3 font-semibold">{t.holidayRemainingDays}</th>
                   <th className="px-5 py-3 text-center font-semibold">{t.colActions}</th>
                 </tr>
@@ -554,6 +653,8 @@ export const OfficialHolidaysView: React.FC<OfficialHolidaysViewProps> = ({
                     </td>
                     <td className="px-5 py-3 text-slate-200">{record.entitlementDays} {t.holidayDaysUnit}</td>
                     <td className="px-5 py-3 text-slate-200">{record.usedDays} {t.holidayDaysUnit}</td>
+                    <td className="px-5 py-3 font-bold text-violet-300">{record.religiousHolidayDays ?? 0} {t.holidayDaysUnit}</td>
+                    <td className="px-5 py-3 font-bold text-sky-300">{record.nationalHolidayDays ?? 0} {t.holidayDaysUnit}</td>
                     <td className={`px-5 py-3 font-bold ${
                       record.entitlementDays - record.usedDays < 0 ? 'text-rose-300' : 'text-emerald-300'
                     }`}>
