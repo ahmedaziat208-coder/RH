@@ -388,6 +388,22 @@ const DEMO_ADJUSTMENT_IDS = new Set(['adj-1', 'adj-2', 'adj-3', 'adj-4']);
 const DEMO_TIPS_POOL_IDS = new Set(['tips-1']);
 
 // Helper to compute Moroccan payroll slip
+export function getAdvanceMonthlyDeduction(advance: AdvanceRecord, month: string): number {
+  const [startYear, startMonth] = advance.deductionMonth.split('-').map(Number);
+  const [targetYear, targetMonth] = month.split('-').map(Number);
+  if (!startYear || !startMonth || !targetYear || !targetMonth) return 0;
+  const installmentMonths = Math.max(1, Math.trunc(advance.installmentMonths || 1));
+  const offset = (targetYear - startYear) * 12 + targetMonth - startMonth;
+  if (offset < 0 || offset >= installmentMonths) return 0;
+
+  const cents = Math.round(advance.amount * 100);
+  if (offset === installmentMonths - 1) {
+    const monthlyCents = Math.floor(cents / installmentMonths);
+    return (cents - monthlyCents * (installmentMonths - 1)) / 100;
+  }
+  return Math.floor(cents / installmentMonths) / 100;
+}
+
 export function computeMoroccanSlipForEmployee(
   employee: Employee,
   month: string,
@@ -414,8 +430,8 @@ export function computeMoroccanSlipForEmployee(
     .filter(record => record.status === 'PRESENT' || record.status === 'LATE')
     .reduce((sum, record) => sum + Math.max(0, record.regularHours || 0), 0);
   const advancesDeducted = advances
-    .filter(adv => adv.employeeId === employee.id && adv.deductionMonth === month && adv.status === 'APPROVED')
-    .reduce((sum, adv) => sum + adv.amount, 0);
+    .filter(adv => adv.employeeId === employee.id && adv.status === 'APPROVED')
+    .reduce((sum, adv) => sum + getAdvanceMonthlyDeduction(adv, month), 0);
 
   const slip: PayrollSlip = {
     id: `slip-${month}-${employee.id}`,
@@ -1298,7 +1314,11 @@ class DatabaseManager {
 
       if (status === 'PAID') {
         this.state.advances = this.state.advances.map(a => {
-          if (a.deductionMonth === month && a.status === 'APPROVED') {
+          const [startYear, startMonth] = a.deductionMonth.split('-').map(Number);
+          const [targetYear, targetMonth] = month.split('-').map(Number);
+          const installments = Math.max(1, Math.trunc(a.installmentMonths || 1));
+          const offset = (targetYear - startYear) * 12 + targetMonth - startMonth;
+          if (a.status === 'APPROVED' && offset === installments - 1) {
             return { ...a, status: 'DEDUCTED' };
           }
           return a;

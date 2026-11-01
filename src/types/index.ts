@@ -93,6 +93,7 @@ export interface AdvanceRecord {
   amount: number;             // بالدرهم المغربي
   requestDate: string;
   deductionMonth: string;     // YYYY-MM
+  installmentMonths?: number; // عدد الأشهر
   status: AdvanceStatus;
   reason: string;
   approvedBy?: string;

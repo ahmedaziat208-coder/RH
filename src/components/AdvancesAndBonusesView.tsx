@@ -61,6 +61,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
   const [advAmount, setAdvAmount] = useState<number>(1000);
   const [advReason, setAdvReason] = useState('');
   const [advMonth, setAdvMonth] = useState(getCurrentMonth());
+  const [advInstallments, setAdvInstallments] = useState(1);
 
   // New & Edit Adjustment Modal state
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
@@ -78,6 +79,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
     setAdvAmount(1000);
     setAdvReason('');
     setAdvMonth(getCurrentMonth());
+    setAdvInstallments(1);
     setIsAdvanceModalOpen(true);
   };
 
@@ -87,6 +89,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
     setAdvAmount(adv.amount);
     setAdvReason(adv.reason);
     setAdvMonth(adv.deductionMonth);
+    setAdvInstallments(adv.installmentMonths || 1);
     setIsAdvanceModalOpen(true);
   };
 
@@ -99,6 +102,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
         employeeId: advEmployeeId,
         amount: Number(advAmount),
         deductionMonth: advMonth,
+        installmentMonths: advInstallments,
         reason: advReason,
       });
     } else {
@@ -107,6 +111,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
         amount: Number(advAmount),
         requestDate: getCurrentDateString(),
         deductionMonth: advMonth,
+        installmentMonths: advInstallments,
         status: 'APPROVED',
         reason: advReason || 'تسبيق على الراتب',
         approvedBy: settings.restaurantManager,
@@ -196,10 +201,10 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
           <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <HandCoins className="w-4 h-4 text-amber-400" />
-              سجل تسبيقات رواتب موظفي المطعم بالمغرب (Acomptes)
+              جدول السلفيات
             </h3>
             <span className="text-xs text-slate-400">
-              يتم خصم التسبيق المعتمد تلقائياً من قسيمة راتب الشهر المحدد
+              يتم حساب الاقتطاع شهرياً وتوزيع السلفة تلقائياً على الأشهر المحددة
             </span>
           </div>
 
@@ -208,9 +213,11 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
               <thead className="bg-slate-900/50 border-b border-slate-800 text-slate-400 font-semibold">
                 <tr>
                   <th className="p-3.5">اسم الموظف</th>
-                  <th className="p-3.5">مبلغ التسبيق (د.م)</th>
+                  <th className="p-3.5">مبلغ السلفة (د.م)</th>
                   <th className="p-3.5">تاريخ الطلب</th>
-                  <th className="p-3.5">شهر الخصم المستهدف</th>
+                  <th className="p-3.5">شهر الاقتطاع</th>
+                  <th className="p-3.5">المبلغ المقتطع شهرياً</th>
+                  <th className="p-3.5">تقسيط السلفة</th>
                   <th className="p-3.5">السبب / الغرض</th>
                   <th className="p-3.5">الحالة</th>
                   <th className="p-3.5 text-center">إجراءات</th>
@@ -238,6 +245,16 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
 
                       <td className="p-3.5 font-mono text-amber-300 font-semibold">
                         شهر {adv.deductionMonth}
+                      </td>
+
+                      <td className="p-3.5 font-bold font-mono text-amber-300">
+                        {formatCurrency(adv.amount / (adv.installmentMonths || 1), settings.currencySymbol)}
+                      </td>
+
+                      <td className="p-3.5 text-slate-300">
+                        <span className="rounded-lg bg-sky-500/10 px-2 py-1 text-sky-300">
+                          {(adv.installmentMonths || 1)} شهر
+                        </span>
                       </td>
 
                       <td className="p-3.5 text-slate-300">
@@ -419,7 +436,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <HandCoins className="w-5 h-5 text-amber-400" />
-                {editingAdvance ? 'تعديل بيانات التسبيق المالي' : 'تسجيل تسبيق جديد على الراتب'}
+                {editingAdvance ? 'تعديل بيانات السلفة المالية' : 'تسجيل سلفة جديدة على الراتب'}
               </h3>
               <button onClick={() => setIsAdvanceModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -428,7 +445,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
 
             <form onSubmit={handleSaveAdvance} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">الموظف الطالب للتسبيق *</label>
+                <label className="block text-slate-300 font-semibold mb-1">الموظف طالب السلفة *</label>
                 <select
                   value={advEmployeeId}
                   onChange={(e) => setAdvEmployeeId(e.target.value)}
@@ -443,7 +460,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">مبلغ التسبيق ({settings.currencySymbol}) *</label>
+                <label className="block text-slate-300 font-semibold mb-1">مبلغ السلفة ({settings.currencySymbol}) *</label>
                 <input
                   type="number"
                   required
@@ -456,7 +473,7 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">شهر الخصم من الراتب *</label>
+                <label className="block text-slate-300 font-semibold mb-1">شهر بدء الاقتطاع *</label>
                 <input
                   type="month"
                   required
@@ -467,7 +484,24 @@ export const AdvancesAndBonusesView: React.FC<AdvancesAndBonusesViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">سبب أو غرض التسبيق</label>
+                <label className="block text-slate-300 font-semibold mb-1">عدد أشهر التقسيط *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max="60"
+                  step="1"
+                  value={advInstallments}
+                  onChange={(e) => setAdvInstallments(Math.max(1, Math.trunc(Number(e.target.value) || 1)))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
+                />
+                <p className="mt-2 rounded-lg bg-slate-950/40 px-3 py-2 text-amber-300">
+                  المبلغ المقتطع شهرياً: <strong>{formatCurrency(advAmount / advInstallments, settings.currencySymbol)}</strong>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">سبب أو غرض السلفة</label>
                 <textarea
                   rows={2}
                   value={advReason}
